@@ -10,7 +10,7 @@
 //
 
 //
-// $Id:  $
+// $Id: ISOImage.pas,v 1.5 2004/06/15 15:33:29 muetze1 Exp $
 //
 
 Unit ISOImage;
@@ -28,7 +28,7 @@ Uses
   Classes;            // for TStrings
 
 Type
-  TISOLib = Class
+  TISOImage = Class
   Private
       // Log Stream
     fLog         : TStrings;
@@ -56,6 +56,7 @@ Type
     Function    OpenImage: Boolean;
     Function    ParsePathTable(ATreeView : TTreeView = Nil): Boolean;
     Function    ExtractFile(Const AFileEntry: TFileEntry; Const AFileName : String): Boolean;
+    Function    CloseImage: Boolean;
 
   Published
     Property    Filename    : String       Read  fFileName;
@@ -72,11 +73,11 @@ Type
   PByte = ^Byte;
 
 Const
-  UNIT_ID : String = '$Id: ISOLib.pas,v 1.2 2004-06-01 23:14:45+02 muetze1 Exp muetze1 $';
+  UNIT_ID : String = '$Id: ISOImage.pas,v 1.5 2004/06/15 15:33:29 muetze1 Exp $';
 
 { TISOLib }
 
-Constructor TISOLib.Create(const AFileName: String; ALog: TStrings);
+Constructor TISOImage.Create(const AFileName: String; ALog: TStrings);
 Begin
   Inherited Create;
 
@@ -89,7 +90,7 @@ Begin
   fTree          := TDataTree.Create;
 End;
 
-Destructor TISOLib.Destroy;
+Destructor TISOImage.Destroy;
 Begin
   If ( Assigned(fTree) ) Then
     FreeAndNil(fTree);
@@ -109,13 +110,30 @@ Begin
   Inherited;
 End;
 
-Procedure TISOLib.DumpData(const ALength: Cardinal);
-Type
-  PByte = ^Byte;
+Function TISOImage.CloseImage: Boolean;
+Begin
+  fFileName := '';
+
+  If Assigned(fImage) Then
+    FreeAndNil(fImage);
+  If Assigned(fPVDClass) Then
+    FreeAndNil(fPVDClass);
+  If Assigned(fSVDClass) Then
+    FreeAndNil(fSVDClass);
+  If Assigned(fBRClass) Then
+    FreeAndNil(fBRClass);
+  If Assigned(fTree) Then
+    FreeAndNil(fTree);
+
+  Result := True;
+End;
+
+Procedure TISOImage.DumpData(const ALength: Cardinal);
 Var
   OrgPtr,
   Buffer   : PByte;
-  Row, Col : Integer;
+  Row      : Cardinal;
+  Col      : Word;
   CharStr,
   DumpStr  : String;
 Begin
@@ -126,7 +144,7 @@ Begin
 
     For Row := 0 To ((ALength-1) Div 16) Do
     Begin
-      DumpStr := IntToHex(fImage.Stream.Position - ALength + Row*16, 8) + 'h | ';
+      DumpStr := IntToHex(Cardinal(fImage.Stream.Position) - ALength + Row*16, 8) + 'h | ';
       CharStr := '';
       For Col := 0 To Min(16, ALength - (Row+1)*16) Do
       Begin
@@ -145,7 +163,7 @@ Begin
   End;
 End;
 
-Function TISOLib.ExtractFile(Const AFileEntry: TFileEntry; Const AFileName: String): Boolean;
+Function TISOImage.ExtractFile(Const AFileEntry: TFileEntry; Const AFileName: String): Boolean;
 Var
   lFStream : TFileStream;
   lFSize   : Int64;
@@ -176,13 +194,13 @@ Begin
   End;
 End;
 
-Procedure TISOLib.Log(Const AFunction, AMessage: String);
+Procedure TISOImage.Log(Const AFunction, AMessage: String);
 Begin
   If ( Assigned(fLog) ) Then
     fLog.Add(AFunction + '(): ' + AMessage);
 End;
 
-Function TISOLib.OpenImage: Boolean;
+Function TISOImage.OpenImage: Boolean;
 Var
   VD : TVolumeDescriptor;
 Begin
@@ -196,11 +214,6 @@ Begin
 
       // die Sektor 0 bis Sektor 15 enthalten nur 0-Sektoren
     fImage.SeekSector(16);
-
-    If ( SizeOf(TVolumeDescriptor) <> 2048 ) Then
-      Log('OpenImage', 'structure mismatch: TVolumeDescriptor size is ' + IntToStr(SizeOf(TVolumeDescriptor)) + ' instead of 2048 bytes!');
-    If ( SizeOf(TRootDirectoryRecord) <> 34 ) Then
-      Log('OpenImage', 'structure mismatch: TRootDirectoryRecord size is ' + IntToStr(SizeOf(TRootDirectoryRecord)) + ' instead of 34 bytes!');
 
     If ( fImage.ImageFormat = ifCompleteSectors ) Then
       Log('OpenImage', 'image contains RAW data')
@@ -253,6 +266,8 @@ Begin
     Until ( VD.DescriptorType = vdtVDST );
 
     ParseDirectory;
+
+    Result := True;
   End
   Else
   Begin
@@ -261,7 +276,7 @@ Begin
   End;
 End;
 
-Function TISOLib.ParseDirectory(Const AUsePrimaryVD : Boolean): Boolean;
+Function TISOImage.ParseDirectory(Const AUsePrimaryVD : Boolean): Boolean;
 Var
   DirRootSourceRec : TRootDirectoryRecord;
   EndSector   : Cardinal;
@@ -324,7 +339,7 @@ Begin
   End;
 End;
 
-Function TISOLib.ParseDirectorySub(AParentDir : TDirectoryEntry; Const AFileName : String; Var ADirectoryEntry : PDirectoryRecord): Boolean;
+Function TISOImage.ParseDirectorySub(AParentDir : TDirectoryEntry; Const AFileName : String; Var ADirectoryEntry : PDirectoryRecord): Boolean;
 Var
   EndSector   : Cardinal;
   OldPosition : Integer;
@@ -335,16 +350,8 @@ Var
   lWorkPtr,
   lBuffer     : PByte;
 Begin
-
   If ( ADirectoryEntry.FileFlags And $2 ) = $2 Then // directory
   Begin
-//    If ( AFilename = #0 ) Then
-//      Log('ParseDirectory', 'directory .')
-//    Else If ( AFileName = #1 ) Then
-//      Log('ParseDirectory', 'directory ..')
-//    Else
-//      Log('ParseDirectory', 'directory ' + AFileName);
-
     OldPosition := fImage.CurrentSector;
 
     If ( AFileName <> #0 ) And ( AFileName <> #1 ) Then
@@ -399,16 +406,16 @@ Begin
   Begin
     If ( AFileName <> '' ) And ( ADirectoryEntry.DataLength.LittleEndian > 0 ) Then
     Begin
-//      Log('ParseDirectory', 'file ' + AFilename + ', ' + IntToStr(ADirectoryEntry.DataLength.LittleEndian) + ' bytes');
-
       FileEntry := TFileEntry.Create(AParentDir, dsfFromImage);
       FileEntry.Name    := AFileName;
       FileEntry.ISOData := ADirectoryEntry^;
     End;
   End;
+
+  Result := True;
 End;
 
-Function TISOLib.ParsePathTable(ATreeView : TTreeView = Nil): Boolean;
+Function TISOImage.ParsePathTable(ATreeView : TTreeView): Boolean;
 Var
   PathTableEntry : TPathTableRecord;
   FileName       : String;
@@ -469,8 +476,6 @@ Begin
 
       If ( PathTableEntry.LengthOfDirectoryIdentifier = 1 ) Then
       Begin
-        //Log('ParsePathTable', '/');
-
         If ( Assigned(ATreeView) ) And ( PathTabelEntryNumber = 1 ) Then
         Begin
           Node := ATreeView.Items.AddChild(Nil, '/');
@@ -479,8 +484,6 @@ Begin
       End
       Else
       Begin
-        //Log('ParsePathTable', FileName);
-
         If ( Assigned(ATreeView) ) Then
         Begin
           Node := ATreeView.Items.AddChild(FindParent(PathTableEntry.ParentDirectoryNumber), FileName);
@@ -497,7 +500,16 @@ End.
 
 //  Log List
 //
-// $Log:  $
+// $Log: ISOImage.pas,v $
+// Revision 1.5  2004/06/15 15:33:29  muetze1
+// renamed class to prevent later problems when creatin TISOLib
+//
+// Revision 1.4  2004/06/15 14:46:03  muetze1
+// removed warnings and old comments
+//
+// Revision 1.3  2004/06/07 02:24:41  nalilord
+// first isolib cvs check-in
+//
 //
 //
 //

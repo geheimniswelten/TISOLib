@@ -5,7 +5,7 @@
 //
 
 //
-// $Id:  $
+// $Id: DataTree.pas,v 1.4 2004/06/15 15:32:32 muetze1 Exp $
 //
 
 Unit DataTree;
@@ -202,10 +202,10 @@ Var
 Begin
   ADir := fDirectory;
   Result := '';
-  
+
   While ( Assigned(ADir) ) Do
   Begin
-    Result := ADir.Name + Result;
+    Result := ADir.Name + '/' + Result;
     ADir   := ADir.Parent;
   End;
 End;
@@ -361,7 +361,13 @@ End.
 
 //  Log List
 //
-// $Log:  $
+// $Log: DataTree.pas,v $
+// Revision 1.4  2004/06/15 15:32:32  muetze1
+// bug fix for GetFullPath
+//
+// Revision 1.3  2004/06/07 02:24:41  nalilord
+// first isolib cvs check-in
+//
 //
 //
 //

@@ -5,7 +5,7 @@
 //
 
 //
-// $Id:  $
+// $Id: VolumeDescriptors.pas,v 1.3 2004/06/07 02:24:41 nalilord Exp $
 //
 
 Unit VolumeDescriptors;
@@ -807,7 +807,10 @@ End.
 
 //  Log List
 //
-// $Log:  $
+// $Log: VolumeDescriptors.pas,v $
+// Revision 1.3  2004/06/07 02:24:41  nalilord
+// first isolib cvs check-in
+//
 //
 //
 //

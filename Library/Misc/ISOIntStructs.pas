@@ -5,7 +5,7 @@
 //
 
 //
-// $Id:  $
+// $Id: ISOIntStructs.pas,v 1.3 2004/06/07 02:24:41 nalilord Exp $
 //
 
 Unit ISOIntStructs;
@@ -18,7 +18,10 @@ End.
 
 //  Log List
 //
-// $Log:  $
+// $Log: ISOIntStructs.pas,v $
+// Revision 1.3  2004/06/07 02:24:41  nalilord
+// first isolib cvs check-in
+//
 //
 //
 //

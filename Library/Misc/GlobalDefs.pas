@@ -5,7 +5,7 @@
 //
 
 //
-// $Id:  $
+// $Id: GlobalDefs.pas,v 1.3 2004/06/07 02:24:41 nalilord Exp $
 //
 
 Unit GlobalDefs;
@@ -22,6 +22,9 @@ End.
 //  Log List
 //
 // $Log: GlobalDefs.pas,v $
+// Revision 1.3  2004/06/07 02:24:41  nalilord
+// first isolib cvs check-in
+//
 //
 //
 //

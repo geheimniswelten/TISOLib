@@ -9,7 +9,7 @@
 (******************************************************************************)
 
 //
-// $Id:  $
+// $Id: ISODiscLib.pas,v 1.3 2004/06/07 02:24:41 nalilord Exp $
 //
 
 Unit ISODiscLib;
@@ -751,7 +751,10 @@ End.
 
 //  Log List
 //
-// $Log:  $
+// $Log: ISODiscLib.pas,v $
+// Revision 1.3  2004/06/07 02:24:41  nalilord
+// first isolib cvs check-in
+//
 //
 //
 //

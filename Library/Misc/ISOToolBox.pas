@@ -5,7 +5,7 @@
 //
 
 //
-// $Id:  $
+// $Id: ISOToolBox.pas,v 1.4 2004/06/20 16:10:05 nalilord Exp $
 //
 
 Unit ISOToolBox;
@@ -13,7 +13,7 @@ Unit ISOToolBox;
 Interface
 
 Uses
-  ISOStructs;
+  ISOStructs, Dialogs;
 
   Function IntToMB(Const ASize : Int64): String;
   Function VolumeDateTimeToStr(Const VDT : TVolumeDateTime): String;
@@ -248,32 +248,32 @@ End;
 
 Function GetLBA(Const Byte1,Byte2,Byte3,Byte4:Byte):LongWord;
 Begin
-  Result:=( Byte1 Shl 24 ) Or ( Byte2 Shl 16 ) Or (Byte3 Shl 8 ) Or Byte4;
+  Result := ( Byte1 Shl 24 ) Or ( Byte2 Shl 16 ) Or (Byte3 Shl 8 ) Or Byte4;
 End;
 
 Function HMSFtoLBA(Const AHour, AMinute, ASecond, AFrame : Byte): LongWord;
 Begin
-  Result:=(AHour * 60 * 60 * 75) + (AMinute * 60 * 75) + (ASecond * 75) + AFrame;
+  Result := (AHour * 60 * 60 * 75) + (AMinute * 60 * 75) + (ASecond * 75) + AFrame;
 End;
 
 Function HiWord(Lx:LongWord):Word;
 Begin
-  Result:=(Lx Shr 16) And $FFFF;
+  Result := (Lx Shr 16) And $FFFF;
 End;
 
 Function LoWord(Lx:LongWord):Word;
 Begin
-  Result:=Lx;
+  Result := Lx;
 End;
 
 Function HiByte(Lx:Word):Byte;
 Begin
-  Result:=(Lx Shr 8) And $FF;
+  Result := (Lx Shr 8) And $FF;
 End;
 
 Function LoByte(Lx:Word):Byte;
 Begin
-  Result:=Lx;
+  Result := Lx And $FF;
 End;
 
 Function IsBitSet(Const Value: LongWord; Const Bit: Byte): Boolean;
@@ -315,7 +315,13 @@ End.
 
 //  Log List
 //
-// $Log:  $
+// $Log: ISOToolBox.pas,v $
+// Revision 1.4  2004/06/20 16:10:05  nalilord
+// range check error in LoByte function fixed
+//
+// Revision 1.3  2004/06/07 02:24:41  nalilord
+// first isolib cvs check-in
+//
 //
 //
 //

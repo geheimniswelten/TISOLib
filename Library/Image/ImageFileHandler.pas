@@ -5,7 +5,7 @@
 //
 
 //
-// $Id:  $
+// $Id: ImageFileHandler.pas,v 1.4 2004/06/15 14:45:31 muetze1 Exp $
 //
 
 Unit ImageFileHandler;
@@ -39,7 +39,7 @@ Type
     fYellowBookFormat : TISOYellowBookFormat;
     fImageFormat      : TISOImageFormat;
 
-    fImageOffset      : Integer; // e.g. used by Nero Images
+    fImageOffset      : Cardinal; // e.g. used by Nero Images
     fFileStream       : TFileStream;
 
     fCurrentSector    : Cardinal;
@@ -48,7 +48,7 @@ Type
     Procedure    DetectImageType; Virtual;
     Function     CalcSectorOffset(Const ASector : Cardinal): Integer; Virtual;
     Function     CalcUserDataOffset: Integer; Virtual;
-    Function     GetSectorDataSize: Integer; Virtual;
+    Function     GetSectorDataSize: Cardinal; Virtual;
 
   Public
     Constructor  Create(Const AFileName : String; Const AImageFormat : TISOImageFormat); Overload; Virtual;
@@ -63,8 +63,8 @@ Type
   Published
     Property     YellowBookFormat : TISOYellowBookFormat   Read  fYellowBookFormat;
     Property     ImageFormat      : TISOImageFormat        Read  fImageFormat;
-    Property     ImageOffset      : Integer                Read  fImageOffset;
-    Property     SectorDataSize   : Integer                Read  GetSectorDataSize;
+    Property     ImageOffset      : Cardinal               Read  fImageOffset;
+    Property     SectorDataSize   : Cardinal               Read  GetSectorDataSize;
     Property     CurrentSector    : Cardinal               Read  fCurrentSector;
 
     Property     Stream           : TFileStream            Read  fFileStream;           
@@ -256,7 +256,7 @@ Begin
 
     fFileStream.Seek(lDataOffset, soFromCurrent);
 
-    If ( ABufferSize > -1 ) And ( ABufferSize < GetSectorDataSize ) Then
+    If ( ABufferSize > -1 ) And ( Cardinal(ABufferSize) < GetSectorDataSize ) Then
       Raise EISOImageHandlerException.Create('TImageFileHandler.ReadSector_Data(): buffer overflow protection'); 
 
     fFileStream.ReadBuffer(ABuffer, GetSectorDataSize);
@@ -282,7 +282,7 @@ Begin
   End;
 End;
 
-Function TImageFileHandler.GetSectorDataSize: Integer;
+Function TImageFileHandler.GetSectorDataSize: Cardinal;
 Begin
   Case fYellowBookFormat Of
     ybfMode1 : Result := 2048;
@@ -296,7 +296,13 @@ End.
 
 //  Log List
 //
-// $Log:  $
+// $Log: ImageFileHandler.pas,v $
+// Revision 1.4  2004/06/15 14:45:31  muetze1
+// removed warnings and old comments
+//
+// Revision 1.3  2004/06/07 02:24:41  nalilord
+// first isolib cvs check-in
+//
 //
 //
 //
