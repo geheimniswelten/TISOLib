@@ -5,7 +5,7 @@
 //
 
 //
-// $Id: ISOSCSIStructs.pas,v 1.3 2004/06/07 02:24:41 nalilord Exp $
+// $Id: ISOSCSIStructs.pas,v 1.5 2004/07/15 21:09:16 nalilord Exp $
 //
 
 Unit ISOSCSIStructs;
@@ -23,7 +23,7 @@ Type
   TFreeASPI32Buffer       = Function(Buffer:Pointer): Boolean; Cdecl;
   TTranslateASPI32Address = Function(Path:Pointer;DevNode:Pointer): Boolean; Cdecl;
 
-  SRB_HAInquiry = Record
+  SRB_HAInquiry = Packed Record
     SRB_Cmd       : Byte; // ASPI command code = SC_HA_INQUIRY
     SRB_Status    : Byte; // ASPI command status byte
     SRB_HaId      : Byte; // ASPI host adapter number
@@ -40,7 +40,7 @@ Type
   PSRB_HAInquiry = ^SRB_HAInquiry;
   TSRB_HAInquiry = SRB_HAInquiry;
 
-  SRB_GDEVBlock = Record
+  SRB_GDEVBlock = Packed Record
     SRB_Cmd         : Byte; // ASPI command code = SC_GET_DEV_TYPE
     SRB_Status      : Byte; // ASPI command status byte
     SRB_HaId        : Byte; // ASPI host adapter number
@@ -55,7 +55,7 @@ Type
   TSRB_GDEVBlock = SRB_GDEVBlock;
   PSRB_GDEVBlock = ^SRB_GDEVBlock;
 
-  SRB_ExecSCSICmd = Record
+  SRB_ExecSCSICmd = Packed Record
     SRB_Cmd         : Byte; // ASPI command code = SC_EXEC_SCSI_CMD
     SRB_Status      : Byte; // ASPI command status byte
     SRB_HaId        : Byte; // ASPI host adapter number
@@ -80,7 +80,7 @@ Type
   TSRB_ExecSCSICmd = SRB_ExecSCSICmd;
   PSRB_ExecSCSICmd = ^SRB_ExecSCSICmd;
 
-  SRB_Abort = Record
+  SRB_Abort = Packed Record
     SRB_Cmd       : Byte; // ASPI command code = SC_EXEC_SCSI_CMD
     SRB_Status    : Byte; // ASPI command status byte
     SRB_HaId      : Byte; // ASPI host adapter number
@@ -92,7 +92,7 @@ Type
   TSRB_Abort = SRB_Abort;
   PSRB_Abort = ^SRB_Abort;
 
-  SRB_BusDeviceReset = Record
+  SRB_BusDeviceReset = Packed Record
     SRB_Cmd       : Byte; // ASPI command code = SC_EXEC_SCSI_CMD
     SRB_Status    : Byte; // ASPI command status byte
     SRB_HaId      : Byte; // ASPI host adapter number
@@ -112,7 +112,7 @@ Type
   TSRB_BusDeviceReset = SRB_BusDeviceReset;
   PSRB_BusDeviceReset = ^SRB_BusDeviceReset;
 
-  SRB_GetDiskInfo = Record
+  SRB_GetDiskInfo = Packed Record
     SRB_Cmd             : Byte; // ASPI command code = SC_EXEC_SCSI_CMD
     SRB_Status          : Byte; // ASPI command status byte
     SRB_HaId            : Byte; // ASPI host adapter number
@@ -130,7 +130,7 @@ Type
   TSRB_GetDiskInfo = SRB_GetDiskInfo;
   PSRB_GetDiskInfo = ^SRB_GetDiskInfo;
 
-  SRB_RescanPort = Record
+  SRB_RescanPort = Packed Record
     SRB_Cmd       :Byte; // 00/000 ASPI command code = SC_RESCAN_SCSI_BUS
     SRB_Status    :Byte; // 01/001 ASPI command status byte
     SRB_HaId      :Byte; // 02/002 ASPI host adapter number
@@ -141,7 +141,7 @@ Type
   TSRB_RescanPort = SRB_RescanPort;
   PSRB_RescanPort = ^SRB_RescanPort;
 
-  SRB_GetSetTimeouts = Record
+  SRB_GetSetTimeouts = Packed Record
     SRB_Cmd       : Byte; // 00/000 ASPI command code = SC_GETSET_TIMEOUTS
     SRB_Status    : Byte; // 01/001 ASPI command status byte
     SRB_HaId      : Byte; // 02/002 ASPI host adapter number
@@ -155,7 +155,7 @@ Type
   TSRB_GetSetTimeouts = SRB_GetSetTimeouts;
   PSRB_GetSetTimeouts = ^SRB_GetSetTimeouts;
 
-  ASPI32BUFF = Record
+  ASPI32BUFF = Packed Record
     AB_BufPointer : Pointer; // 00/000 Pointer to the ASPI allocated buffer
     AB_BufLen     : DWORD; // 04/004 Length in bytes of the buffer
     AB_ZeroFill   : DWORD; // 08/008 Flag set to 1 if buffer should be zeroed
@@ -184,7 +184,7 @@ Type
     SenKeySpec15  : Byte;                   // Sense Key Specific 15th byte
     SenKeySpec16  : Byte;                   // Sense Key Specific 16th byte
     SenKeySpec17  : Byte;                   // Sense Key Specific 17th byte
-    AddSenseBytes : Array[18..32] of Byte;  // Additional Sense Bytes
+    AddSenseBytes : Array[18..31] of Byte;  // Additional Sense Bytes
   End;
 
   TASPI32Buffer = Packed Record
@@ -194,7 +194,7 @@ Type
     AB_Reserved   : LongInt;
   End;
 
-  TSCSIDrive = Record
+  TSCSIDrive = Packed Record
     HA            : Byte;
     Target        : Byte;
     LUN           : Byte;
@@ -204,7 +204,7 @@ Type
     Data          : Array[0..64] of Char;
   End;
 
-  TSCSIDrives = Record
+  TSCSIDrives = Packed Record
     NumAdapters : Byte;
     Drive       : Array[0..26] of TSCSIDrive;
   End;
@@ -217,78 +217,106 @@ Type
     Lun         : Byte;
   End;
 
-  TDeviceConfigHeader = Record
-    DataLength        : DWORD;
+  TDeviceConfigHeader = Packed Record
+    DataLength        : Cardinal;
     Reserved          : Word;
     CurrentProfile    : Word;
     FeatureCode       : Word;
     Version           : Byte;
     AdditionalLength  : Byte;
-    OtherData         : Array[0..101] of Byte
+    OtherData         : Array[0..101] of Byte;
   End;
 
-  TTOCData = Record
+  TTOCData0000 = Packed Record
     DataLength        : Word;
     FirstTrackNumber  : Byte;
     LastTrackNumber   : Byte;
     Reserved1         : Byte;
-    Reserved2         : Byte;
+    ADR_CONTROL       : Byte;
     TrackNumber       : Byte;
     Reserved3         : Byte;
-    TrackStartAddress : DWORD;
-    OtherData         : Array[0..101] of Byte;
-  End;
+    TrackStartAddress : Cardinal;
+  end;
 
-  TTOCDataSessionInfo = Record
+  TTOCData0001 = Packed Record
+    DataLength                            : Word;
+    FirstTrackNumber                      : Byte;
+    LastTrackNumber                       : Byte;
+    Reserved1                             : Byte;
+    ADR_CONTROL                           : Byte;
+    FirstTrackNumberInLastCompleteSession : Byte;
+    Reserved3                             : Byte;
+    StartAddressOfFirstTrackInLastSession : Cardinal;
+  end;
+
+  TTOCData0010 = Packed Record
     DataLength        : Word;
     FirstTrackNumber  : Byte;
     LastTrackNumber   : Byte;
-  End;
+    SessionNumberHex  : Byte;
+    ADR_CONTROL       : Byte;
+    TNO               : Byte;
+    POINT             : Byte;
+    MIN               : Byte;
+    SEC               : Byte;
+    FRAME             : Byte;
+    ZERO_HOUR_PHOUR   : Byte;
+    PMIN              : Byte;
+    PSEC              : Byte;
+    PFRAME            : Byte;
+  end;
 
-  TTOCDataATIP = Record
-    DataLength    : Word;
-    FirstSession  : Byte;
-    LastSession   : Byte;
-    Field0        : Byte;
-    Field1        : Byte;
-    Field2        : Byte;
-    Reserved      : Byte;
-    StartMin      : Byte;
-    StartSec      : Byte;
-    StartFrame    : Byte;
-    Reserved2     : Byte;
-    EndMin        : Byte;
-    EndSec        : Byte;
-    EndFrame      : Byte;
-    Others        : Array[0..10] of Byte;
-  End;
+  TTOCData0011 = Packed Record
+    DataLength        : Word;
+    FirstTrackNumber  : Byte;
+    LastTrackNumber   : Byte;
+    Reserved          : Byte;
+    ADR_CONTROL       : Byte;
+    TNO               : Byte;
+    POINT             : Byte;
+    MIN               : Byte;
+    SEC               : Byte;
+    FRAME             : Byte;
+    ZERO_HOUR_PHOUR   : Byte;
+    PMIN              : Byte;
+    PSEC              : Byte;
+    PFRAME            : Byte;
+  end;
 
-  TTOCDiscInformation = Record
-    StartLBA            : DWORD;
-    EndLBA              : DWORD;
-    FirstTrackNumber    : Byte;
-    LastTrackNumber     : Byte;
-    DiscType            : Integer;
-    TOCData             : TTOCData;
-    TOCDataSessionInfo  : TTOCDataSessionInfo;
-    TOCDataATIP         : TTOCDataATIP;
-  End;
+  TTOCData0100 = Packed Record
+    DataLength                                        : Word;
+    Reserved1                                         : Byte;
+    Reserved2                                         : Byte;
+    IndicativeTargetWritingPower_DDCD_ReferenceSpeed  : Byte;
+    URU                                               : Byte;
+    DiscType_DiscSubType_A1Valid_A2Valid_A3Valid      : Byte;
+    Reserved3                                         : Byte;
+    ATIPStartTimeOfLeadIn_Min                         : Byte;
+    ATIPStartTimeOfLeadIn_Sec                         : Byte;
+    ATIPStartTimeOfLeadIn_Frame                       : Byte;
+    Reserved4                                         : Byte;
+    ATIPStartTimeOfLeadOut_Min                        : Byte;
+    ATIPStartTimeOfLeadOut_Sec                        : Byte;
+    ATIPStartTimeOfLeadOut_Frame                      : Byte;
+    Reserved5                                         : Byte;
+    A1Values                                          : Array [0..2] of Byte;
+    Reserved6                                         : Byte;
+    A2Values                                          : Array [0..2] of Byte;
+    Reserved7                                         : Byte;
+    A3Values                                          : Array [0..2] of Byte;
+    Reserved8                                         : Byte;
+    S4Values                                          : Array [0..2] of Byte;
+    Reserved9                                         : Byte;
+  end;
 
-  TDiscInformation = Record
-    DataLen                 : Word;
-    DiscStatus              : Byte;
-    FirstTrack              : Byte;
-    Sessions                : Byte;
-    FirstTrackOfLastSession : Byte;
-    LastTrackOfLastSession  : Byte;
-    InformationValidity     : Byte;
-    DiscType                : Byte;
-    Reserved                : Array [0..2] of Byte;
-    DiscIdentification      : Array [0..3] of Byte;
-    Reserved2               : Array [12..50] of Byte;
-  End;
+  TTOCData0101 = Packed Record
+    DataLength  : Word;
+    Reserved1   : Byte;
+    Reserved2   : Byte;
+    Data        : Array [0..17] of Byte;
+  end;
 
-  TTrackInformation = Record
+  TTrackInformation = Packed Record
     DataLength           : Word;
     TrackNumber          : Byte;
     SessionNumber        : Byte;
@@ -310,22 +338,30 @@ Type
     Reserved6            : Byte;
   End;
 
-  TFormattableCD = Record
-    NumberOfBlocks  : Cardinal;
-    FormatType      : Byte;
-    TDP1            : Word;
-    TDP2            : Byte;
+  TFormattableCD = Packed Record
+    NumberOfBlocks        : Cardinal;
+    FormatType            : Byte;
+    TypeDependentParamter : Array [0..2] of Byte;
   End;
 
-  TFormatCapacity = Record
+  TCapacityListHeader = Packed Record
     Reserved1           : Byte;
     Reserved2           : Byte;
     Reserved3           : Byte;
     CapacityListLength  : Byte;
+  end;
+
+  TCurrentMaximumCapacityDescriptor = Packed Record
     NumberOfBlocks      : Cardinal;
     DescriptorType      : Byte;
-    BlockLength         : Word;
-    FormattableCD       : Array[0..32] of TFormattableCD;
+    BlockLength         : Array [0..2] of Byte;
+  end;
+
+  TFormatCapacity = Packed Record
+    CapacityListHeader  : TCapacityListHeader;
+    CapacityDescriptor  : TCurrentMaximumCapacityDescriptor;
+    FormattableCD       : Array [0..32] of TFormattableCD;
+    Unused              : Byte;
   End;
 
   PSCSI_PASS_THROUGH = ^SCSI_PASS_THROUGH;
@@ -369,7 +405,7 @@ Type
     SenseBuf : Array[0..31] of Byte;
   End;
 
-  SENSE_DATA_FMT = Record
+  SENSE_DATA_FMT = Packed Record
     ErrorCode     : Byte; // Error Code (70H or 71H)End;
     SegmentNum    : Byte; // Number of current segment descriptor
     SenseKey      : Byte; // Sense Key(See bit definitions too)
@@ -394,7 +430,7 @@ Type
   TSENSE_DATA_FMT = SENSE_DATA_FMT;
   PSENSE_DATA_FMT = ^SENSE_DATA_FMT;
 
-  SCSI_INQUIRY_DATA_RESULT = Record
+  SCSI_INQUIRY_DATA_RESULT = Packed Record
     Peripheral          : Byte;
     RMB                 : Byte;
     Version             : Byte;
@@ -421,7 +457,7 @@ Type
     VendorSpecific2     : Array [0..157] of Byte;
   End;
 
-  TDrive = Record
+  TDrive = Packed Record
     Letter    : Char;
     HaId      : Byte;
     TargetId  : Byte;
@@ -431,41 +467,42 @@ Type
     Reversion : PChar;
   End;
 
-  TDriveList = Record
+  TDriveList = Packed Record
     NoOfDrives  : Byte;
     Drives      : Array [0..26] of TDrive;
   End;
 
-  TDiscInformationBlock = Record
+  TDiscInformation = Packed Record
     DiscInformationLength           : Word;
     Status                          : Byte;
-    NumberOfFirstTrackLSB           : Byte;
+    NumberOfFirstTrack              : Byte;
     NumberOfSessionsLSB             : Byte;
-    FirstTrackInLastSession         : Byte;
-    LastTrackInLastSession          : Byte;
+    FirstTrackInLastSessionLSB      : Byte;
+    LastTrackInLastSessionLSB       : Byte;
     DiscInfo                        : Byte;
     DiscType                        : Byte;
+    NumberOfSessionsMSB             : Byte;
     FirstTrackInLastSessionMSB      : Byte;
     LastTrackInLastSessionMSB       : Byte;
-    DiscIdentification              : DWORD;
-    LastSessionLeadinStartAddress   : DWORD;
-    LastPossibleLeadoutStartAddress : DWORD;
+    DiscIdentification              : Cardinal;
+    LastSessionLeadinStartAddress   : Cardinal;
+    LastPossibleLeadoutStartAddress : Cardinal;
     DiscBarCode                     : Array [0..7] of Byte;
     DiscApplicationCode             : Byte;
     NumberOfOPCTables               : Byte;
   End;
 
-  TOPCTableEntry = Record
+  TOPCTableEntry = Packed Record
     Speed     : Word;
     OPCValues : Array [0..5] of Byte;
   End;
 
-  TDiscInformationBlockWithOPC = Record
-    DiscInformation : TDiscInformationBlock;
-    OPCTableEntries : Array of TOPCTableEntry;
+  TDiscInformationBlockWithOPC = Packed Record
+    DiscInformation : TDiscInformation;
+    OPCTableEntries : Array of TOPCTableEntry; // don't know the count or max count??
   End;
 
-  SCSI_INQUIRY_DATA = Record
+  SCSI_INQUIRY_DATA = Packed Record
     PathId                : Byte;
     TargetId              : Byte;
     Lun                   : Byte;
@@ -475,18 +512,18 @@ Type
     InquiryData           : Byte;
   End;
 
-  SCSI_BUS_DATA = Record
+  SCSI_BUS_DATA = Packed Record
     NumberOfLogicalUnits  : Byte;
     InitiatorBusId        : Byte;
     InquiryDataOffset     : ULONG;
   End;
 
-  SCSI_ADAPTER_BUS_INFO = Record
+  SCSI_ADAPTER_BUS_INFO = Packed Record
     NumberOfBuses : Byte;
     BusData       : SCSI_BUS_DATA;
   End;
 
-  TDVDLayerDescriptor = Record
+  TDVDLayerDescriptor = Packed Record
     DataLength                          : Word;
     Reserved1                           : Byte;
     Reserved2                           : Byte;
@@ -529,7 +566,7 @@ Type
     EndPhysicalSectorInLayerZero        : DWORD;
 (*
     Reserved3                           : Byte;
-    StartingPhysicalSector              : Array [0..2] of Byte;End;
+    StartingPhysicalSector              : Array [0..2] of Byte;
                                                 //    30000h DVD-ROM, DVD-R/-RW, DVD+RW
                                                 //    31000h DVD-RAM
                                                 //    Others Reserved
@@ -541,13 +578,23 @@ Type
     BCA                                 : Byte;
   End;
 
-  TLogicalUnitWriteSpeedPerformanceDescriptorTable = Record
+  TLogicalUnitWriteSpeedPerformanceDescriptorTable = Packed Record
     Reserved:Byte;
     RotationControl:Byte;
     WriteSpeedSupported:Word;
   End;
 
-  TMode10Capabilities = Record
+  TModeParametersHeader = packed record
+    ModeDataLength        : Word;
+    Reserved1             : Byte;
+    Reserved2             : Byte;
+    Reserved3             : Byte;
+    Reserved4             : Byte;
+    BlockDescriptorLength : Word;
+  end;
+
+  TMode10Capabilities = packed record
+    ModeParametersHeader        : TModeParametersHeader;
     PageCode                    : Byte;
     PageLength                  : Byte;
     ReadCapabilities            : Byte;
@@ -563,14 +610,83 @@ Type
     Reserved1                   : Byte;
     Length_LSBF_RCK_BCKF        : Byte;
     MaxWriteSpeed               : Word;
-    CurWriteSpeed               : Word;
+    CurWriteSpeed_Res           : Word;
     CopyManagemnetRevSupported  : Word;
     Reserved2                   : Array [0..2] of Byte;
     RotationControlSpeed        : Byte;
     CurrentWriteSpeed           : Word;
     NoWriteSpeedDescTables      : Word;
-    WriteSpeeds                 : Array [0..132] of TLogicalUnitWriteSpeedPerformanceDescriptorTable;
-  End;
+    WriteSpeeds                 : Array [0..99] of TLogicalUnitWriteSpeedPerformanceDescriptorTable;
+  end;
+
+  TCapabilities = ( caReadCDR,
+                    caReadCDRW,
+                    caReadMethod2,
+                    caReadDVDROM,
+                    caReadDVDR,
+                    caReadDVDRW,
+                    caReadDVDRAM,
+                    caReadDVDPLUSR,
+                    caReadDVDPLUSRW,
+                    caReadBarcode,
+                    caWriteCDR,
+                    caWriteCDRW,
+                    caWriteTest,
+                    caWriteDVDR,
+                    caWriteDVDRW,
+                    caWriteDVDRAM,
+                    caWriteDVDPLUSR,
+                    caWriteDVDPLUSRW,
+                    caUPC,
+                    caISRC,
+                    caBufferUnderrunProtection);
+
+  TDeviceCapabilities = set of TCapabilities;
+
+  TMechanismStatusHeader = packed record
+    Fault_ChangerState_CurrentSlot      : Byte; // Bit(s)
+                                                //   7  = Fault
+                                                //
+                                                // 6-5  = Changer State
+                                                //  +-- 0h  = Ready
+                                                //  +-- 1h  = Load in Progress
+                                                //  +-- 2h  = Unload in Progress
+                                                //  +-- 3h  = Initializing
+                                                //
+                                                // 4-0  = Current Slot (Low order 5 bits)
+    MechanismState_DoorOpen_CurrentSlot : Byte; // Bit(s)
+                                                //
+                                                // 7-5  = Mechanism State
+                                                //  +-- 0h  = Idle
+                                                //  +-- 1h  = Playing (Audio or Data)
+                                                //  +-- 2h  = Scanning
+                                                //  +-- 3h  = Active with Initiator, Composite or Other Ports in use (i.e. READ)
+                                                //  +-- 7h  = No State Information Available
+                                                //
+                                                //   4  = Door open
+                                                // 2-0  = Current Slot (High order 3 bits)
+    CurrentLBA                          : Array [0..2] of Byte;
+    NumberOfSlots                       : Byte;
+    LengthOfSlot                        : Word;
+  end;
+
+  TSlotTable = packed record
+    DiscPresent_Change  : Byte; // Bit(s)
+                                // 7  = Disc Present
+                                // 0  = Change
+    CWPV_CWP            : Byte; // Bit(s)
+                                // 1  = CWP_V
+                                // 0  = CWP
+    Reserved1           : Byte;
+    Reserved2           : Byte;
+  end;
+
+  TMechanismStatus = packed record
+    MechanismStatusHeader : TMechanismStatusHeader;
+    SlotTables            : Array [0..9] of TSlotTable;
+  end;
+
+  TUnitReturned = 0..2;
 
 Implementation
 
@@ -579,6 +695,27 @@ End.
 //  Log List
 //
 // $Log: ISOSCSIStructs.pas,v $
+// Revision 1.5  2004/07/15 21:09:16  nalilord
+// Fixed some bugs an structures in DeviceIO
+// Fixed ReadTOC
+// New function GetConfigurationData
+// Now can get Device Capabilities but not yet finished
+// Other workarounds and fixes
+//
+// Revision 1.4  2004/06/24 02:07:05  nalilord
+// ISOSCSIStructs
+// added - record TModeParametersHeader
+// changed - record TMode10Capabilities - mode header was missing
+//
+// ISODiscLib
+// working - function ModeSense10Capabilities
+//
+// ISOToolBox
+// crtical - bugfix function SwapWord - Miscalculation in function
+// changed - function SwapDWord - Calculation in function
+//
+// added ToDo list
+//
 // Revision 1.3  2004/06/07 02:24:41  nalilord
 // first isolib cvs check-in
 //

@@ -9,7 +9,7 @@
 (******************************************************************************)
 
 //
-// $Id: ISODiscLib.pas,v 1.3 2004/06/07 02:24:41 nalilord Exp $
+// $Id: ISODiscLib.pas,v 1.5 2004/07/15 21:09:16 nalilord Exp $
 //
 
 Unit ISODiscLib;
@@ -43,15 +43,19 @@ Type
     Destructor  Destroy; Override;
 
     Function    ScanDevices: Boolean;
+    function    GetStatus(const AHandle:THandle;var MechanismStatus:TMechanismStatus):Boolean;
     Function    UnitReady(Const AHandle: THandle): Boolean;
     Function    ReadDiscInformation(Const AHandle: THandle; Var DiscInformation: TDiscInformation): Boolean;
     Function    GetDiscType(Const AHandle: THandle): Integer;
+    //TODO 5 -oNaliLord:test and finish the GetConfigurationData function
+    function    GetConfigurationData(const AHandle:THandle;const StartingFeature:Word;const UnitReturned:TUnitReturned;Buffer:Pointer;const BufferSize:Word):Boolean;
     Function    GetFormatCapacity(Const AHandle:THandle; Var FormatCapacity:TFormatCapacity): Boolean;
-    Function    ReadTOC(Const AHandle: THandle; Var TOCDiscInformation:TTOCDiscInformation): Boolean;
+    Function    ReadTOC(Const AHandle: THandle):Boolean;
     Function    ReadTrackInformation(Const AHandle: THandle; Const ATrack: Byte; Var TrackInformation:TTrackInformation): Boolean;
     Function    OpenDrive(Const ADrive: Char): THandle;
     Function    CloseDrive(Const AHandle: THandle): Boolean;
     Function    ReadDVDLayerDescriptor(Const AHandle: THandle; Var DVDLayerDescriptor:TDVDLayerDescriptor): Boolean;
+    //TODO 4 -oNaliLord:finish ModeSense10Capabilities function (return set of capabilities) 
     Function    ModeSense10Capabilities(Const AHandle: THandle; Var Mode10Capabilities:TMode10Capabilities): Boolean;
 
     Procedure   Test(Const AHandle: THandle);
@@ -66,6 +70,7 @@ Implementation
 Uses
   Forms,     // for Application
   Dialogs,   // for ShowMessage()
+  Classes,   // for TMemoryStream, needed for some tests
   SysUtils;  // for Trim()
 
 Constructor TISODiscLib.Create;
@@ -74,6 +79,7 @@ Begin
 
   fUseASPI := InitASPI;
   fUseSPTI := InitSPTI;
+
 End;
 
 Destructor TISODiscLib.Destroy;
@@ -142,12 +148,40 @@ Begin
   Result := ClosePort(AHandle);
 End;
 
-Function TISODiscLib.UnitReady(Const AHandle: THandle): Boolean;
-Var
+function TISODiscLib.GetStatus(const AHandle:THandle;var MechanismStatus:TMechanismStatus):Boolean;
+var
   SPTDW    : SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER;
   Returned : LongWord;
   Size     : Cardinal;
+begin
+  ZeroMemory(@SPTDW, SizeOf(SPTDW));
+  Size := SizeOf(SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER);
+
+  SPTDW.Spt.Length             := SizeOf(SCSI_PASS_THROUGH);
+  SPTDW.Spt.CdbLength          := 11;
+  SPTDW.Spt.SenseInfoLength    := 32;
+  SPTDW.Spt.DataIn             := SCSI_IOCTL_DATA_IN;
+  SPTDW.Spt.DataTransferLength := SizeOf(TMechanismStatus);
+  SPTDW.Spt.TimeOutValue       := 120;
+  SPTDW.Spt.DataBuffer         := @MechanismStatus;
+  SPTDW.Spt.SenseInfoOffset    := 48;
+
+  SPTDW.Spt.Cdb[0]:=$BD;
+  SPTDW.Spt.Cdb[8]:=HiByte(SizeOf(TMechanismStatus));
+  SPTDW.Spt.Cdb[9]:=LoByte(SizeOf(TMechanismStatus));
+
+  Result:=DeviceIoControl(AHandle,IOCTL_SCSI_PASS_THROUGH_DIRECT,@SPTDW,Size,@SPTDW,Size,Returned,Nil);
+end;
+
+Function TISODiscLib.UnitReady(Const AHandle: THandle):Boolean;
+Var
+  SPTDW           : SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER;
+  Returned        : LongWord;
+  Size            : Cardinal;
+  Sense           : TSenseData;
+  MechanismStatus : TMechanismStatus;
 Begin
+  Result:=False;
   ZeroMemory(@SPTDW, SizeOf(SPTDW));
   Size := SizeOf(SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER);
 
@@ -160,11 +194,24 @@ Begin
   SPTDW.Spt.DataBuffer         := nil;
   SPTDW.Spt.SenseInfoOffset    := 48;
 
-  Result := DeviceIoControl( AHandle,
-                             IOCTL_SCSI_PASS_THROUGH_DIRECT,
-                             @SPTDW, Size,
-                             @SPTDW, Size,
-                             Returned, Nil);
+  if DeviceIoControl(AHandle,IOCTL_SCSI_PASS_THROUGH_DIRECT,@SPTDW,Size,@SPTDW,Size,Returned,Nil) then
+  begin
+    CopyMemory(@Sense,@SPTDW.SenseBuf,32);
+
+    if Sense.ErrorCode = $00 then Result:=True else // device is maby not ready, or medium missing?
+    begin
+      ZeroMemory(@MechanismStatus,SizeOf(MechanismStatus));
+      if GetStatus(AHandle,MechanismStatus) then
+      begin
+        // device status, handle advanced options: tray open, busy...
+      end else
+      begin
+        // can't get device status, handle error here
+      end;
+    end;
+
+  end;
+
 End;
 
 Function TISODiscLib.ScanDevices: Boolean;
@@ -240,6 +287,8 @@ Begin
   Result := False;
 
   ZeroMemory(@SPTDW, SizeOf(SPTDW));
+  ZeroMemory(@DiscInformation, SizeOf(TDiscInformation));
+
   Size := SizeOf(SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER);
 
   SPTDW.Spt.Length             := SizeOf(SCSI_PASS_THROUGH);
@@ -254,11 +303,10 @@ Begin
   SPTDW.Spt.Cdb[7]             := HiByte(SizeOf(DiscInformation));
   SPTDW.Spt.Cdb[8]             := LoByte(SizeOf(DiscInformation));
 
-  ZeroMemory(@DiscInformation, SizeOf(DiscInformation));
   If DeviceIoControl( AHandle, IOCTL_SCSI_PASS_THROUGH_DIRECT,
                       @SPTDW, Size, @SPTDW, Size, Returned, Nil) Then
   Begin
-    DiscInformation.DataLen := SwapWord( DiscInformation.DataLen );
+    DiscInformation.DiscInformationLength := SwapWord( DiscInformation.DiscInformationLength );
     Result := True;
   End;
 End;
@@ -320,6 +368,36 @@ Begin
   End;
 End;
 
+function TISODiscLib.GetConfigurationData(const AHandle:THandle;const StartingFeature:Word;const UnitReturned:TUnitReturned;Buffer:Pointer;const BufferSize:Word):Boolean;
+Var
+  SPTDW    : SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER;
+  Size     : Integer;
+  Returned : LongWord;
+begin
+  ZeroMemory(Buffer, BufferSize);
+  ZeroMemory(@SPTDW, SizeOf(SPTDW));
+  Size := SizeOf(SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER);
+
+  SPTDW.Spt.Length             := SizeOf(SCSI_PASS_THROUGH);
+  SPTDW.Spt.CdbLength          := 10;
+  SPTDW.Spt.SenseInfoLength    := 32;
+  SPTDW.Spt.DataIn             := SCSI_IOCTL_DATA_IN;
+  SPTDW.Spt.DataTransferLength := SizeOf(BufferSize);
+  SPTDW.Spt.TimeOutValue       := 120;
+  SPTDW.Spt.DataBuffer         := Buffer;
+  SPTDW.Spt.SenseInfoOffset    := 48;
+
+  SPTDW.Spt.Cdb[0] := $46;
+  SPTDW.Spt.Cdb[1] := Byte(UnitReturned);
+  SPTDW.Spt.Cdb[2] := HiByte(StartingFeature);
+  SPTDW.Spt.Cdb[3] := LoByte(StartingFeature);
+  SPTDW.Spt.Cdb[7] := HiByte(BufferSize);
+  SPTDW.Spt.Cdb[8] := LoByte(BufferSize);
+
+  Result := DeviceIoControl( AHandle, IOCTL_SCSI_PASS_THROUGH_DIRECT,
+                      @SPTDW, Size, @SPTDW, Size, Returned, Nil);
+end;
+
 Function TISODiscLib.GetFormatCapacity(Const AHandle: THandle; Var FormatCapacity:TFormatCapacity):Boolean;
 Var
   SPTDW    : SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER;
@@ -335,14 +413,14 @@ Begin
   SPTDW.Spt.CdbLength          := 10;
   SPTDW.Spt.SenseInfoLength    := 32;
   SPTDW.Spt.DataIn             := SCSI_IOCTL_DATA_IN;
-  SPTDW.Spt.DataTransferLength := SizeOf(FormatCapacity);
+  SPTDW.Spt.DataTransferLength := SizeOf(TFormatCapacity);
   SPTDW.Spt.TimeOutValue       := 120;
   SPTDW.Spt.DataBuffer         := @FormatCapacity;
   SPTDW.Spt.SenseInfoOffset    := 48;
 
   SPTDW.Spt.Cdb[0] := $23;
-  SPTDW.Spt.Cdb[7] := HiByte(SizeOf(FormatCapacity));
-  SPTDW.Spt.Cdb[8] := LoByte(SizeOf(FormatCapacity));
+  SPTDW.Spt.Cdb[7] := HiByte(SizeOf(TFormatCapacity));
+  SPTDW.Spt.Cdb[8] := LoByte(SizeOf(TFormatCapacity));
 
   If DeviceIoControl( AHandle, IOCTL_SCSI_PASS_THROUGH_DIRECT,
                       @SPTDW, Size, @SPTDW, Size, Returned, Nil) Then
@@ -355,99 +433,109 @@ Begin
                                FormatCapacity.FormattableCD[I].FormatType Shr 2;
     End;
 
-    FormatCapacity.BlockLength    := SwapWord(FormatCapacity.BlockLength);
-    FormatCapacity.NumberOfBlocks := SwapDWord(FormatCapacity.NumberOfBlocks);
+    FormatCapacity.CapacityDescriptor.NumberOfBlocks := SwapDWord(FormatCapacity.CapacityDescriptor.NumberOfBlocks);
+
     Result := True;
   End;
+
 End;
 
-Function TISODiscLib.ReadTOC(Const AHandle: THandle; Var TOCDiscInformation:TTOCDiscInformation):Boolean;
+Function TISODiscLib.ReadTOC(Const AHandle: THandle):Boolean;
 Var
   SPTDW              : SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER;
   Size, Returned     : LongWord;
-  TOCDataSessionInfo : TTOCDataSessionInfo;
-  TOCDataATIP        : TTOCDataATIP;
-  TOCData            : TTOCData;
+  TocData0000        : TTOCData0000;
+  TocData0001        : TTOCData0001;
+  TocData0100        : TTOCData0100;
 Begin
-  Result := True;
+  Result := False;
 
-  ZeroMemory(@TOCDiscInformation, SizeOf(TOCDiscInformation));
   ZeroMemory(@SPTDW, SizeOf(SPTDW));
+  ZeroMemory(@TocData0000, SizeOf(TTOCData0000));
+  ZeroMemory(@TocData0001, SizeOf(TTOCData0001));
+  ZeroMemory(@TocData0100, SizeOf(TTOCData0100));
+
   Size := SizeOf(SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER);
 
   SPTDW.Spt.Length             := SizeOf(SCSI_PASS_THROUGH);
   SPTDW.Spt.CdbLength          := 10;
   SPTDW.Spt.SenseInfoLength    := 32;
   SPTDW.Spt.DataIn             := SCSI_IOCTL_DATA_IN;
-  SPTDW.Spt.DataTransferLength := SizeOf(TOCData);
   SPTDW.Spt.TimeOutValue       := 120;
-  SPTDW.Spt.DataBuffer         := @TOCData;
   SPTDW.Spt.SenseInfoOffset    := 48;
   SPTDW.Spt.Cdb[0]             := $43; // Read TOC command
 
-  ZeroMemory(@TOCData, SizeOf(TOCData));
-  ZeroMemory(@TOCDataATIP, SizeOf(TOCDataATIP));
-  ZeroMemory(@TOCDataSessionInfo, SizeOf(TOCDataSessionInfo));
+  // == TocData 0000 ===========================================================
+
+  SPTDW.Spt.DataTransferLength := SizeOf(TocData0000);
+  SPTDW.Spt.DataBuffer         := @TocData0000;
+
+  SPTDW.Spt.Cdb[1] := $00;
+  SPTDW.Spt.Cdb[2] := $00;
+  SPTDW.Spt.Cdb[7] := HiByte(SizeOf(TocData0000));
+  SPTDW.Spt.Cdb[8] := LoByte(SizeOf(TocData0000));
 
   If DeviceIoControl( AHandle, IOCTL_SCSI_PASS_THROUGH_DIRECT,
                       @SPTDW, Size, @SPTDW, Size, Returned, Nil) Then
   Begin
-    TOCData.DataLength := SwapWord(TOCData.DataLength);
+    ShowMessage('Sturcture DataLength: '+IntToStr(TocData0000.DataLength)+#13+
+                'TOC 0000b'+#13+
+                '==========================================================='+#13+
+                'FirstTrackNumber: '+IntToStr(TocData0000.FirstTrackNumber)+#13+
+                'LastTrackNumber: '+IntToStr(TocData0000.LastTrackNumber)+#13+
+                'ADR_CONTROL: '+IntToStr(TocData0000.ADR_CONTROL)+#13+
+                'TrackNumber: '+IntToStr(TocData0000.TrackNumber)+#13+
+                'TrackStartAddress: '+IntToStr(TocData0000.TrackStartAddress));
+  End;
 
-    SPTDW.Spt.Cdb[1] := $00;
-    SPTDW.Spt.Cdb[2] := $00;
-    SPTDW.Spt.Cdb[6] := TOCData.LastTrackNumber;
-    SPTDW.Spt.Cdb[7] := HiByte(SizeOf(TOCData));
-    SPTDW.Spt.Cdb[8] := LoByte(SizeOf(TOCData));
+  // == TocData 0001 ===========================================================
 
-    If DeviceIoControl( AHandle, IOCTL_SCSI_PASS_THROUGH_DIRECT,
-                        @SPTDW, Size, @SPTDW, Size, Returned, Nil) Then
-    Begin
-      TOCData.DataLength        := SwapWord(TOCData.DataLength);
-      TOCData.TrackStartAddress := SwapDWord(TOCData.TrackStartAddress);
-      TOCDiscInformation.TOCData          := TOCData;
-      TOCDiscInformation.FirstTrackNumber := TOCData.FirstTrackNumber;
-      TOCDiscInformation.LastTrackNumber  := TOCData.LastTrackNumber;
-    End;
+  SPTDW.Spt.DataTransferLength := SizeOf(TocData0001);
+  SPTDW.Spt.DataBuffer         := @TocData0001;
 
-    SPTDW.Spt.Cdb[1] := $00;
-    SPTDW.Spt.Cdb[2] := $01;
-    SPTDW.Spt.Cdb[6] := $00;
-    SPTDW.Spt.Cdb[7] := HiByte(SizeOf(TOCDataSessionInfo));
-    SPTDW.Spt.Cdb[8] := LoByte(SizeOf(TOCDataSessionInfo));
-    SPTDW.Spt.DataBuffer := @TOCDataSessionInfo;
-    SPTDW.Spt.DataTransferLength := SizeOf(TOCDataSessionInfo);
+  SPTDW.Spt.Cdb[1] := $00;
+  SPTDW.Spt.Cdb[2] := $01;
+  SPTDW.Spt.Cdb[7] := HiByte(SizeOf(TocData0001));
+  SPTDW.Spt.Cdb[8] := LoByte(SizeOf(TocData0001));
 
-    If DeviceIoControl( AHandle, IOCTL_SCSI_PASS_THROUGH_DIRECT,
-                        @SPTDW, Size, @SPTDW, Size, Returned, Nil) Then
-    Begin
-      TOCDiscInformation.TOCDataSessionInfo := TOCDataSessionInfo;
-    End;
+  If DeviceIoControl( AHandle, IOCTL_SCSI_PASS_THROUGH_DIRECT,
+                      @SPTDW, Size, @SPTDW, Size, Returned, Nil) Then
+  Begin
+    ShowMessage('Sturcture DataLength: '+IntToStr(TocData0001.DataLength)+#13+
+                'TOC 0001b'+#13+
+                '==========================================================='+#13+
+                'FirstTrackNumber: '+IntToStr(TocData0001.FirstTrackNumber)+#13+
+                'LastTrackNumber: '+IntToStr(TocData0001.LastTrackNumber)+#13+
+                'ADR_CONTROL: '+IntToStr(TocData0001.ADR_CONTROL)+#13+
+                'FirstTrackNumberInLastCompleteSession: '+IntToStr(TocData0001.FirstTrackNumberInLastCompleteSession)+#13+
+                'StartAddressOfFirstTrackInLastSession: '+IntToStr(TocData0001.StartAddressOfFirstTrackInLastSession));
+  End;
 
-    SPTDW.Spt.Cdb[1] := $02;
-    SPTDW.Spt.Cdb[2] := $04;
-    SPTDW.Spt.Cdb[6] := $00;
-    SPTDW.Spt.Cdb[7] := HiByte(SizeOf(TOCDataATIP));
-    SPTDW.Spt.Cdb[8] := LoByte(SizeOf(TOCDataATIP));
-    SPTDW.Spt.DataBuffer := @TOCDataATIP;
-    SPTDW.Spt.DataTransferLength := SizeOf(TOCDataATIP);
+  // == TocData 0100 ===========================================================
 
-    If DeviceIoControl( AHandle, IOCTL_SCSI_PASS_THROUGH_DIRECT,
-                        @SPTDW, Size, @SPTDW, Size, Returned, Nil) Then
-    Begin
-      TOCDiscInformation.TOCDataATIP := TOCDataATIP;
-      TOCDiscInformation.StartLBA    := HMSFtoLBA( 0,
-                                                   TOCDataATIP.StartMin,
-                                                   TOCDataATIP.StartSec,
-                                                   TOCDataATIP.StartFrame);
-      TOCDiscInformation.EndLBA      := HMSFtoLBA( 0,
-                                                   TOCDataATIP.EndMin,
-                                                   TOCDataATIP.EndSec,
-                                                   TOCDataATIP.EndFrame);
-    End;
-  End
-  Else
-    Result := False;
+  SPTDW.Spt.DataTransferLength := SizeOf(TocData0100);
+  SPTDW.Spt.DataBuffer         := @TocData0100;
+
+  SPTDW.Spt.Cdb[1] := $02;
+  SPTDW.Spt.Cdb[2] := $04;
+  SPTDW.Spt.Cdb[7] := HiByte(SizeOf(TocData0100));
+  SPTDW.Spt.Cdb[8] := LoByte(SizeOf(TocData0100));
+
+  If DeviceIoControl( AHandle, IOCTL_SCSI_PASS_THROUGH_DIRECT,
+                      @SPTDW, Size, @SPTDW, Size, Returned, Nil) Then
+  Begin
+    ShowMessage('Sturcture DataLength: '+IntToStr(TocData0100.DataLength)+#13+
+                'TOC 0100b'+#13+
+                '==========================================================='+#13+
+                'ATIPStartTimeOfLeadIn_Min: '+IntToStr(TocData0100.ATIPStartTimeOfLeadIn_Min)+#13+
+                'ATIPStartTimeOfLeadIn_Sec: '+IntToStr(TocData0100.ATIPStartTimeOfLeadIn_Sec)+#13+
+                'ATIPStartTimeOfLeadIn_Frame: '+IntToStr(TocData0100.ATIPStartTimeOfLeadIn_Frame)+#13+
+                'ATIPStartTimeOfLeadOut_Min: '+IntToStr(TocData0100.ATIPStartTimeOfLeadOut_Min)+#13+
+                'ATIPStartTimeOfLeadOut_Sec: '+IntToStr(TocData0100.ATIPStartTimeOfLeadOut_Sec)+#13+
+                'ATIPStartTimeOfLeadOut_Frame: '+IntToStr(TocData0100.ATIPStartTimeOfLeadOut_Frame));
+  end;
+
+
 End;
 
 Function TISODiscLib.ReadTrackInformation(Const AHandle: THandle; Const ATrack: Byte; Var TrackInformation:TTrackInformation): Boolean;
@@ -501,7 +589,6 @@ Var
   Size,
   Returned : LongWord;
 Begin
-  Result := False;
   ZeroMemory(@SPTDW, SizeOf(SPTDW));
   ZeroMemory(@DVDLayerDescriptor, SizeOf(DVDLayerDescriptor));
   Size := SizeOf(SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER);
@@ -530,15 +617,13 @@ Var
   Size,
   Returned : LongWord;
 Begin
-  Result := False;
-
   ZeroMemory(@SPTDW, SizeOf(SPTDW));
   ZeroMemory(@Mode10Capabilities, SizeOf(Mode10Capabilities));
   Size := SizeOf(SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER);
 
   SPTDW.Spt.Length             := SizeOf(SCSI_PASS_THROUGH);
   SPTDW.Spt.CdbLength          := 10;
-  SPTDW.Spt.SenseInfoLength    := 32;
+  SPTDW.Spt.SenseInfoLength    := SENSE_LEN;
   SPTDW.Spt.DataIn             := SCSI_IOCTL_DATA_IN;
   SPTDW.Spt.DataTransferLength := SizeOf(Mode10Capabilities);
   SPTDW.Spt.TimeOutValue       := 120;
@@ -546,13 +631,15 @@ Begin
   SPTDW.Spt.SenseInfoOffset    := 48;
 
   SPTDW.Spt.Cdb[0] := $5A; // Mode Sense 10
-  SPTDW.Spt.Cdb[2] := $2A; // Page code
+  SPTDW.Spt.Cdb[2] := $2A + $80; // Page code, Default Values
   SPTDW.Spt.Cdb[7] := HiByte(SizeOf(Mode10Capabilities));
   SPTDW.Spt.Cdb[8] := LoByte(SizeOf(Mode10Capabilities));
 
   Result := DeviceIoControl( AHandle, IOCTL_SCSI_PASS_THROUGH_DIRECT,
                              @SPTDW, Size, @SPTDW, Size, Returned, Nil);
 End;
+
+//TODO 3 -oNaliLord:create ReadBuffer functions
 
 (*
 function TISODiscLib.Read10Buffer(Handle:Cardinal;LBA:DWORD;Length:DWORD;var Buffer; const BufferSize:Cardinal):Boolean;
@@ -592,19 +679,21 @@ begin
 end;
 *)
 
+//TODO 2 -oNaliLord:remove Test function and build single functions
+
 Procedure TISODiscLib.Test(Const AHandle: THandle);
 Var
-  DiscType, Track, Attempts : Integer;
+  DiscType, Attempts        : Integer;
   DiscInformation           : TDiscInformation;
   FormatCapacity            : TFormatCapacity;
-  TOCDiscInformation        : TTOCDiscInformation;
   TrackInformation          : TTrackInformation;
   DVDLayerDescriptor        : TDVDLayerDescriptor;
   Mode10Capabilities        : TMode10Capabilities;
   Value                     : Byte;
   BookType, DiscSize,
   MaximumRate, LinearDensity,
-  TrackDensity, NoLayer, LayerType : String;
+  TrackDensity, NoLayer,
+  LayerType, Caps : String;
 Begin
   Attempts := 0;
 
@@ -619,49 +708,51 @@ Begin
     If Attempts < 10 Then
     Begin
       DiscType := GetDiscType(AHandle);
-
       If ( DiscType > -1 ) Then
       Begin
         ZeroMemory(@DiscInformation, SizeOf(DiscInformation));
         ZeroMemory(@FormatCapacity, SizeOf(FormatCapacity));
-        ZeroMemory(@TOCDiscInformation, SizeOf(TOCDiscInformation));
         ZeroMemory(@TrackInformation, SizeOf(TrackInformation));
 
         If ( DiscType <= 8 ) Or ( DiscType >= 16 ) Then
         Begin
           if ReadDiscInformation(AHandle,DiscInformation) then
           begin
-            if (DiscInformation.DiscStatus and 16) = 16 then
+            if (DiscInformation.Status and 16) = 16 then
               ShowMessage('ReadDiscInformation ok'#13'======================================='#13+
-                          'FirstTrack: '+IntToStr(DiscInformation.FirstTrack)+#13+
+                          'FirstTrack: '+IntToStr(DiscInformation.NumberOfFirstTrack)+#13+
                           'DiscStatus: Eraseable'+#13+
-                          'Sessions:'+IntToStr(DiscInformation.Sessions))
+                          'Sessions: '+IntToStr(DiscInformation.NumberOfSessionsLSB))
             else
               ShowMessage('ReadDiscInformation ok'#13'======================================='#13+
-                          'FirstTrack: '+IntToStr(DiscInformation.FirstTrack)+#13+
-                          'Sessions:'+IntToStr(DiscInformation.Sessions));
+                          'FirstTrack: '+IntToStr(DiscInformation.NumberOfFirstTrack)+#13+
+                          'Sessions: '+IntToStr(DiscInformation.NumberOfSessionsLSB));
           end;
           if GetFormatCapacity(AHandle,FormatCapacity) then
           begin
             ShowMessage('GetFormatCapacity ok'#13'======================================='#13+
-                        'NumberOfBlocks: '+IntToStr(FormatCapacity.NumberOfBlocks)+#13+
-                        'BlockLength:'+IntToStr(FormatCapacity.BlockLength));
+                        'NumberOfBlocks: '+IntToStr(FormatCapacity.CapacityDescriptor.NumberOfBlocks)+#13+
+                        'BlockLength: '+IntToStr(EndianToIntelBytes(FormatCapacity.CapacityDescriptor.BlockLength,3)));
           end;
+
+          ReadTOC(AHandle);
+
+        (*
           if ReadTOC(AHandle,TOCDiscInformation) then
           begin
             ShowMessage('ReadTOC ok'#13'======================================='#13+
                         'Start LBA: '+IntToStr(TOCDiscInformation.StartLBA)+#13+
-                        'End LBA:'+IntToStr(TOCDiscInformation.EndLBA));
+                        'End LBA: '+IntToStr(TOCDiscInformation.EndLBA));
           end;
-
           if DiscType >= 9 then Track:=1 else Track:=TOCDiscInformation.LastTrackNumber;
 
           if ReadTrackInformation(AHandle,Track,TrackInformation) then
           begin
             ShowMessage('ReadTrackInformation ok'#13'======================================='#13+
                         'TrackSize: '+IntToStr(TrackInformation.TrackSize)+#13+
-                        'LastRecordedAddress:'+IntToStr(TrackInformation.LastRecordedAddress));
+                        'LastRecordedAddress: '+IntToStr(TrackInformation.LastRecordedAddress));
           end;
+*)
         end else
         begin
           ReadDVDLayerDescriptor(AHandle,DVDLayerDescriptor);
@@ -676,7 +767,6 @@ Begin
             $0A: BookType:='DVD+R';
             else BookType:='Unknown';
           end;
-
 
           Value:=(DVDLayerDescriptor.DiscSize_MaximumRate shr 4 ) and $0F;
           case Value of
@@ -737,12 +827,34 @@ Begin
                         'Sectors:'+IntToStr(SwapDWord(DVDLayerDescriptor.EndPhysicalSector)-SwapDWord(DVDLayerDescriptor.StartingPhysicalSector)));
         End;
 
-        ModeSense10Capabilities(AHandle,Mode10Capabilities);
+        if ModeSense10Capabilities(AHandle,Mode10Capabilities) then
+        begin
+          Caps:='';
+          if IsBitSet(Mode10Capabilities.ReadCapabilities,0) then Caps:='Device can Read CD-R';
+          if IsBitSet(Mode10Capabilities.ReadCapabilities,1) then Caps:=Caps+#13+'Device can Read CD-RW';
+          if IsBitSet(Mode10Capabilities.ReadCapabilities,2) then Caps:=Caps+#13+'Device can Read Method 2';
+          if IsBitSet(Mode10Capabilities.ReadCapabilities,3) then Caps:=Caps+#13+'Device can Read DVD-ROM';
+          if IsBitSet(Mode10Capabilities.ReadCapabilities,4) then Caps:=Caps+#13+'Device can Read DVD-R / DVD-RW';
+          if IsBitSet(Mode10Capabilities.ReadCapabilities,5) then Caps:=Caps+#13+'Device can Read DVD-RAM';
+          if IsBitSet(Mode10Capabilities.WriteCapabilities,0) then Caps:=Caps+#13+'Device can Write CD-R';
+          if IsBitSet(Mode10Capabilities.WriteCapabilities,1) then Caps:=Caps+#13+'Device can Write CD-RW';
+          if IsBitSet(Mode10Capabilities.WriteCapabilities,2) then Caps:=Caps+#13+'Device can Write Test';
+          if IsBitSet(Mode10Capabilities.WriteCapabilities,4) then Caps:=Caps+#13+'Device can Write DVD-R / DVD-RW';
+          if IsBitSet(Mode10Capabilities.WriteCapabilities,5) then Caps:=Caps+#13+'Device can Write DVD-RAM';
+          Caps:=Caps+#13+'Device Buffer: '+IntToStr(SwapWord(Mode10Capabilities.BufferSizeSupported))+'k';
+          Caps:=Caps+#13+'Max Read Speed: '+IntToStr(Round(SwapWord(Mode10Capabilities.MaxReadSpeed)  / 176.46))+'x';
+          Caps:=Caps+#13+'Max Write Speed: '+IntToStr(Round(SwapWord(Mode10Capabilities.MaxWriteSpeed)  / 176.46))+'x';
+          Caps:=Caps+#13+'Current Read Speed: '+IntToStr(Round(SwapWord(Mode10Capabilities.CurrentReadSpeed)  / 176.46))+'x';
+          Caps:=Caps+#13+'Current Write Speed: '+IntToStr(Round(SwapWord(Mode10Capabilities.CurrentWriteSpeed)  / 176.46))+'x';
+          ShowMessage('Device Capabilities'+#13+
+                      '==========================================================='+#13+
+                      Caps);
+        end;
       End;
     End
     Else
-    Begin
-      ShowMessage('Unit becomes not ready state...');
+    Begin // Unit not ready! Execute no disc function, but handle drive capabilities request!
+      ShowMessage('Error, unit not ready!'#13'Tray open or no disc in drive?');
     End;
   End;
 End;
@@ -752,6 +864,27 @@ End.
 //  Log List
 //
 // $Log: ISODiscLib.pas,v $
+// Revision 1.5  2004/07/15 21:09:16  nalilord
+// Fixed some bugs an structures in DeviceIO
+// Fixed ReadTOC
+// New function GetConfigurationData
+// Now can get Device Capabilities but not yet finished
+// Other workarounds and fixes
+//
+// Revision 1.4  2004/06/24 02:07:05  nalilord
+// ISOSCSIStructs
+// added - record TModeParametersHeader
+// changed - record TMode10Capabilities - mode header was missing
+//
+// ISODiscLib
+// working - function ModeSense10Capabilities
+//
+// ISOToolBox
+// crtical - bugfix function SwapWord - Miscalculation in function
+// changed - function SwapDWord - Calculation in function
+//
+// added ToDo list
+//
 // Revision 1.3  2004/06/07 02:24:41  nalilord
 // first isolib cvs check-in
 //

@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 353
-  Top = 383
+  Left = 678
+  Top = 443
   BorderStyle = bsDialog
   Caption = 'DeviceIO Test Application'
   ClientHeight = 89

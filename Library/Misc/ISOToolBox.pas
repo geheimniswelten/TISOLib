@@ -5,7 +5,7 @@
 //
 
 //
-// $Id: ISOToolBox.pas,v 1.4 2004/06/20 16:10:05 nalilord Exp $
+// $Id: ISOToolBox.pas,v 1.6 2004/07/15 21:09:16 nalilord Exp $
 //
 
 Unit ISOToolBox;
@@ -26,6 +26,7 @@ Uses
   Function IsAdministrator:Boolean;
   Function GetOsVersion:Integer;
   Function Endian(Const Source; Var Destination; Const Count:Integer): Boolean;
+  Function EndianToIntelBytes(const AValue:Array of Byte;Count:Byte):Integer;
   Function GetLBA(Const Byte1,Byte2,Byte3,Byte4:Byte): LongWord;
   Function HMSFtoLBA(Const AHour, AMinute, ASecond, AFrame : Byte): LongWord;
   Function HiWord(Lx:LongWord):Word;
@@ -73,15 +74,15 @@ End;
 
 Function SwapWord(Const AValue : Word): Word;
 Begin
-  Result := (( AValue And $ff ) Shr 8 ) Or (( AValue Shr 8 ) And $ff );
+  Result := (( AValue shl 8) and $FF00) or (( AValue shr 8) and $00FF);
 End;
 
 Function SwapDWord(Const AValue : LongWord): LongWord;
 Begin
-  Result := ((( AValue Shr  0 ) And $ff ) Shl 24 ) Or
-            ((( AValue Shr  8 ) And $ff ) Shl 16 ) Or
-            ((( AValue Shr 16 ) And $ff ) Shl  8 ) Or
-            ((( AValue Shr 24 ) And $ff ) Shl  0 );
+  Result := ((AValue shl 24) and $FF000000) or
+            ((AValue shl  8) and $00FF0000) or
+            ((AValue shr  8) and $0000FF00) or
+            ((AValue shr 24) and $000000FF);
 End;
 
 Function BuildBothEndianWord(Const AValue : Word): TBothEndianWord;
@@ -246,6 +247,17 @@ Begin
   End;
 End;
 
+Function EndianToIntelBytes(const AValue:Array of Byte;Count:Byte):Integer;
+var
+  I:Integer;
+begin
+  Result:=0;
+  for I:=0 to Count-1 do
+  begin
+    Result:=(AValue[I] shl ((Count-(I+1))*8) or Result);
+  end;
+end;
+
 Function GetLBA(Const Byte1,Byte2,Byte3,Byte4:Byte):LongWord;
 Begin
   Result := ( Byte1 Shl 24 ) Or ( Byte2 Shl 16 ) Or (Byte3 Shl 8 ) Or Byte4;
@@ -316,6 +328,27 @@ End.
 //  Log List
 //
 // $Log: ISOToolBox.pas,v $
+// Revision 1.6  2004/07/15 21:09:16  nalilord
+// Fixed some bugs an structures in DeviceIO
+// Fixed ReadTOC
+// New function GetConfigurationData
+// Now can get Device Capabilities but not yet finished
+// Other workarounds and fixes
+//
+// Revision 1.5  2004/06/24 02:07:05  nalilord
+// ISOSCSIStructs
+// added - record TModeParametersHeader
+// changed - record TMode10Capabilities - mode header was missing
+//
+// ISODiscLib
+// working - function ModeSense10Capabilities
+//
+// ISOToolBox
+// crtical - bugfix function SwapWord - Miscalculation in function
+// changed - function SwapDWord - Calculation in function
+//
+// added ToDo list
+//
 // Revision 1.4  2004/06/20 16:10:05  nalilord
 // range check error in LoByte function fixed
 //
