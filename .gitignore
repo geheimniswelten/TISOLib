@@ -3,6 +3,7 @@ __history
 *.groupproj.local
 *.dproj.local
 *.identcache
+*.~dsk
 *.dsk
 *.dsv
 *.dcu

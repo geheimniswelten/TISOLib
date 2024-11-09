@@ -61,7 +61,7 @@ type
     function ReadSector_Data(var ABuffer; ABufferSize: Integer=-1): Boolean; virtual;
     function ReadSector_Raw (var ABuffer; ABufferSize: Integer=-1): Boolean; virtual;
 
-  published
+  public{published}
     property YellowBookFormat : TISOYellowBookFormat read fYellowBookFormat;
     property ImageFormat      : TISOImageFormat      read fImageFormat;
     property ImageOffset      : Cardinal             read fImageOffset;
@@ -147,7 +147,7 @@ procedure TImageFileHandler.DetectImageType;
 type
   TCheckBuf = packed record
     DeskID : Byte;
-    StdID  : array[0..4] of Char;
+    StdID  : array[0..4] of AnsiChar;
   end;
   TRawCheckBuf = packed record
     SYNC   : array[0..11] of Byte;
@@ -176,7 +176,7 @@ begin
       fFileStream.Position := fImageOffset + 16 * 2048;
       fFileStream.ReadBuffer(Buff, SizeOf(Buff));
 
-      if ( string(Buff.StdID) = 'CD001' ) then
+      if ( AnsiString(Buff.StdID) = 'CD001' ) then
       begin
         fImageFormat      := ifOnlyData;
         fYellowBookFormat := ybfMode1;
@@ -187,7 +187,7 @@ begin
       fFileStream.Position := fImageOffset + 16 * 2336;
       fFileStream.ReadBuffer(Buff, SizeOf(Buff));
 
-      if ( string(Buff.StdID) = 'CD001' ) then
+      if ( AnsiString(Buff.StdID) = 'CD001' ) then
       begin
         fImageFormat      := ifOnlyData;
         fYellowBookFormat := ybfMode2;
@@ -198,7 +198,7 @@ begin
       fFileStream.Position := fImageOffset + 16 * 2352;
       fFileStream.ReadBuffer(RawBuff, SizeOf(RawBuff));
 
-      if ( string(RawBuff.Deskriptor.StdID) = 'CD001' ) then
+      if ( AnsiString(RawBuff.Deskriptor.StdID) = 'CD001' ) then
       begin
         fImageFormat := ifCompleteSectors;
 

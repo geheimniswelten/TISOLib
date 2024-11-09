@@ -441,7 +441,7 @@ type
     InterfaceDependent4 : Byte;
     VendorId            : array[0..7] of AnsiChar;
     ProductId           : array[0..15] of AnsiChar;
-    Reversion           : array[0..3] of AnsiChar;
+    Reversion           : array[0..3]  of AnsiChar;
     VendorSpecific1     : array[0..19] of Byte;
     Reserved1           : Byte;
     Reserved2           : Byte;
@@ -453,24 +453,20 @@ type
     VersionDescriptor6  : Word;
     VersionDescriptor7  : Word;
     VersionDescriptor8  : Word;
-    Reserved3           : array[0..21] of Byte;
+    Reserved3           : array[0..21]  of Byte;
     VendorSpecific2     : array[0..157] of Byte;
   end;
 
-  TDrive = packed record
-    Letter    : AnsiChar;
+  TDrive = record
+    Letter    : Char;
     HaId      : Byte;
     TargetId  : Byte;
     LunID     : Byte;
-    VendorId  : PChar;
-    ProductId : PChar;
-    Reversion : PChar;
+    VendorId  : AnsiString;
+    ProductId : AnsiString;
+    Reversion : AnsiString;
   end;
-
-  TDriveList = packed record
-    NoOfDrives  : Byte;
-    Drives      : array[0..26] of TDrive;
-  end;
+  TDriveList = TArray<TDrive>;
 
   TDiscInformation = packed record
     DiscInformationLength           : Word;

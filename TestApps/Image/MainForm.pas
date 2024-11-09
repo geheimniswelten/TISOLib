@@ -140,7 +140,7 @@ end;
 
 procedure TForm1.BuildStructureTree(ATV: TTreeView; RootNode: TTreeNode; ADirEntry: TDirectoryEntry);
 var
-  i : Integer;
+  i    : Integer;
   Node : TTreeNode;
   Dir  : TDirectoryEntry;
   Fil  : TFileEntry;
@@ -149,7 +149,7 @@ begin
   begin
     Dir := ADirEntry.Directories[i];
 
-    Node := ATV.Items.AddChild(RootNode, Dir.Name + '/');
+    Node := ATV.Items.AddChild(RootNode, string(Dir.Name + '/'));
     Node.Data := Pointer(Dir);
 
     BuildStructureTree(ATV, Node, Dir);
@@ -159,7 +159,7 @@ begin
   begin
     Fil := ADirEntry.Files[i];
 
-    Node := ATV.Items.AddChild(RootNode, Fil.Name);
+    Node := ATV.Items.AddChild(RootNode, string(Fil.Name));
     Node.Data := Pointer(Fil);
   end;
 end;
@@ -188,7 +188,7 @@ begin
       if ( Obj is TDirectoryEntry ) then
       begin
         lb_EntType.Caption  := 'directory';
-        lb_EntName.Caption  := TDirectoryEntry(Obj).Name;
+        lb_EntName.Caption  := string(TDirectoryEntry(Obj).Name);
         lb_EntName.Hint     := '';
         lb_EntName.ShowHint := False;
       end;
@@ -196,8 +196,8 @@ begin
       if ( Obj is TFileEntry ) then
       begin
         lb_EntType.Caption  := 'file';
-        lb_EntName.Caption  := TFileEntry(Obj).Name;
-        lb_EntName.Hint     := TFileEntry(Obj).Path;
+        lb_EntName.Caption  := string(TFileEntry(Obj).Name);
+        lb_EntName.Hint     := string(TFileEntry(Obj).Path);
         lb_EntName.ShowHint := True;
       end;
     end;

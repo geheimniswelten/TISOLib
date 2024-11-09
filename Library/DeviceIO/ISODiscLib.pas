@@ -22,6 +22,7 @@ uses
   Dialogs,   // for ShowMessage
   Classes,   // for TMemoryStream, needed for some tests
   SysUtils,  // for Trim
+  AnsiStrings,
   ISOSCSIConsts,
   ISOSCSIStructs,
   ISOToolBox,
@@ -52,7 +53,7 @@ type
     function ReadDiscInformation(AHandle: THandle; var DiscInformation: TDiscInformation): Boolean;
     function GetDiscType(AHandle: THandle): Integer;
     //TODO 5 -oNaliLord:test and finish the GetConfigurationData function
-    function GetConfigurationData(AHandle: THandle; StartingFeature:Word; UnitReturned: TUnitReturned; Buffer: Pointer; BufferSize: Word):Boolean;
+    function GetConfigurationData(AHandle: THandle; StartingFeature: Word; UnitReturned: TUnitReturned; Buffer: Pointer; BufferSize: Word):Boolean;
     function GetFormatCapacity(AHandle: THandle; var FormatCapacity: TFormatCapacity): Boolean;
     function ReadTOC(AHandle: THandle): Boolean;
     function ReadTrackInformation(AHandle: THandle; ATrack: Byte; var TrackInformation: TTrackInformation): Boolean;
@@ -62,7 +63,7 @@ type
     //TODO 4 -oNaliLord:finish ModeSense10Capabilities function (return set of capabilities)
     function ModeSense10Capabilities(AHandle: THandle; var Mode10Capabilities: TMode10Capabilities): Boolean;
 
-    procedure Test(const AHandle: THandle);
+    procedure Test(AHandle: THandle);
 
     property  OnProgress: TProgressEvent read FOnProgress write FOnProgress;
   end;
@@ -213,10 +214,10 @@ var
   ScsiInquiryData : SCSI_INQUIRY_DATA_RESULT;
   ScsiAddress     : SCSI_ADDRESS;
   ScsiPort,
-  Size, Num,
+  Size, Num, Count,
   Returned        : LongWord;
 begin
-  Result := False;
+  Result  := False;
 
   ZeroMemory(@SPTDW, SizeOf(SPTDW));
   Size := SizeOf(SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER);
@@ -232,13 +233,13 @@ begin
   SPTDW.Spt.Cdb[0]             := $12;
   SPTDW.Spt.Cdb[4]             := SizeOf(ScsiInquiryData);
 
-  ZeroMemory(@FDrives, SizeOf(FDrives));
-
-  Num := 0;
+  Num     := 0;
+  Count   := 0;
+  FDrives := nil;
   repeat
-    if GetDriveType(PChar(Chr(Num + Ord('a')) + ':\')) = DRIVE_CDROM then
+    if GetDriveType(PChar(Char(Num + Ord('a')) + ':\')) = DRIVE_CDROM then
     begin
-      ScsiPort := OpenPort(Chr(Num + Ord('a')));
+      ScsiPort := OpenPort(Char(Num + Ord('a')));
       if ( ScsiPort <> INVALID_HANDLE_VALUE ) then
       begin
         ZeroMemory(@ScsiInquiryData, SizeOf(ScsiInquiryData));
@@ -250,25 +251,24 @@ begin
 
           if DeviceIoControl(ScsiPort, IOCTL_SCSI_GET_ADDRESS, nil, 0, @ScsiAddress, SizeOf(SCSI_ADDRESS), Returned, nil) then
           begin
-            FDrives.Drives[FDrives.NoOfDrives].Letter    := Chr(Num + Ord('a'));
-            FDrives.Drives[FDrives.NoOfDrives].HaId      := ScsiAddress.PathId;
-            FDrives.Drives[FDrives.NoOfDrives].TargetId  := ScsiAddress.TargetId;
-            FDrives.Drives[FDrives.NoOfDrives].LunID     := ScsiAddress.Lun;
-            FDrives.Drives[FDrives.NoOfDrives].VendorId  := PChar(Trim(StrPas(ScsiInquiryData.VendorId)));
-            FDrives.Drives[FDrives.NoOfDrives].ProductId := PChar(Trim(StrPas(ScsiInquiryData.ProductId)));
-            FDrives.Drives[FDrives.NoOfDrives].Reversion := PChar(Trim(StrPas(ScsiInquiryData.Reversion)));
+            SetLength(FDrives, Count + 1);
+            FDrives[Count].Letter    := Char(Num + Ord('a'));
+            FDrives[Count].HaId      := ScsiAddress.PathId;
+            FDrives[Count].TargetId  := ScsiAddress.TargetId;
+            FDrives[Count].LunID     := ScsiAddress.Lun;
+            FDrives[Count].VendorId  := AnsiStrings.Trim(ScsiInquiryData.VendorId);
+            FDrives[Count].ProductId := AnsiStrings.Trim(ScsiInquiryData.ProductId);
+            FDrives[Count].Reversion := AnsiStrings.Trim(ScsiInquiryData.Reversion);
 
-            Inc(FDrives.NoOfDrives);
+            Inc(Count);
             Result := True;
-
-            Inc(FDrives.NoOfDrives);
           end;
         end;
       end;
       ClosePort(ScsiPort);
     end;
     Inc(Num);
-  intil Num = 27;
+  until Num = 27;
 end;
 
 function TISODiscLib.ReadDiscInformation(AHandle: THandle; var DiscInformation: TDiscInformation): Boolean;
@@ -358,7 +358,7 @@ begin
   end;
 end;
 
-function TISODiscLib.GetConfigurationData(AHandle: THandle; StartingFeature: Word; const UnitReturned: TUnitReturned; Buffer: Pointer; BufferSize: Word): Boolean;
+function TISODiscLib.GetConfigurationData(AHandle: THandle; StartingFeature: Word; UnitReturned: TUnitReturned; Buffer: Pointer; BufferSize: Word): Boolean;
 var
   SPTDW    : SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER;
   Size     : Integer;
@@ -469,7 +469,7 @@ begin
               + 'ADR_CONTROL: ' + IntToStr(TocData0000.ADR_CONTROL) + #10
               + 'TrackNumber: ' + IntToStr(TocData0000.TrackNumber) + #10
               + 'TrackStartAddress: ' + IntToStr(TocData0000.TrackStartAddress));
-  rnd;
+  end;
 
   // == TocData 0001 ===========================================================
 
@@ -586,7 +586,7 @@ begin
   SPTDW.Spt.Cdb[9] := LoByte(SizeOf(DVDLayerDescriptor));
   DVDLayerDescriptor.DataLength := SizeOf(DVDLayerDescriptor);
 
-  Result := DeviceIoControl(AHandle, IOCTL_SCSI_PASS_THROUGH_DIRECT, @SPTDW, Size, @SPTDW, Size, Returned, bil);
+  Result := DeviceIoControl(AHandle, IOCTL_SCSI_PASS_THROUGH_DIRECT, @SPTDW, Size, @SPTDW, Size, Returned, nil);
 end;
 
 function TISODiscLib.ModeSense10Capabilities(AHandle: THandle; var Mode10Capabilities: TMode10Capabilities): Boolean;
@@ -661,10 +661,8 @@ var
   DVDLayerDescriptor        : TDVDLayerDescriptor;
   Mode10Capabilities        : TMode10Capabilities;
   Value                     : Byte;
-  BookType, DiscSize,
-  MaximumRate, LinearDensity,
-  TrackDensity, NoLayer,
-  LayerType, Caps : string;
+  BookType, DiscSize, MaximumRate, LinearDensity,
+  TrackDensity, NoLayer, LayerType, Caps : string;
 begin
   Attempts := 0;
 

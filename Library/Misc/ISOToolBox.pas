@@ -15,6 +15,7 @@ interface
 uses
   Windows,   // for TSIDIdentifierAuthority
   SysUtils,  // for IntToStr()
+  AnsiStrings,
   Dialogs,
   ISOStructs;
 
@@ -100,26 +101,25 @@ function BuildVolumeDateTime(const ADateTime: TDateTime; AGMTOffset: Byte): TVol
 var
   Hour, Min, Sec, MSec,
   Year, Month, Day : Word;
-  s : string;
+procedure FillRec(Rec: PAnsiChar; Len: Integer; Value: Word);
+  var
+    Temp: AnsiString;
+  begin
+    Temp := AnsiString(IntToStr(Value));
+    Temp := {AnsiStrings.}StringOfChar(AnsiChar('0'), Len - Length(Temp)) + Temp;
+    AnsiStrings.StrPCopy(Rec, Temp);
+  end;
 begin
-  DecodeTime(ADateTime, Hour, Min, Sec, MSec);
   DecodeDate(ADateTime, Year, Month, Day);
-
+  DecodeTime(ADateTime, Hour, Min, Sec, MSec);
+  FillRec(@Result.Year,     Length(Result.Year),     Year);
+  FillRec(@Result.Month,    Length(Result.Month),    Month);
+  FillRec(@Result.Day,      Length(Result.Day),      Day);
+  FillRec(@Result.Hour,     Length(Result.Hour),     Hour);
+  FillRec(@Result.Minute,   Length(Result.Minute),   Min);
+  FillRec(@Result.Second,   Length(Result.Second),   Sec);
+  FillRec(@Result.MSeconds, Length(Result.MSeconds), MSec);
   Result.GMTOffset := AGMTOffset;
-  s := IntToStr(Hour);
-  StrPCopy(Result.Hour,     StringOfChar('0', Length(Result.Hour) - Length(s)));
-  s := IntToStr(Min);
-  StrPCopy(Result.Minute,   StringOfChar('0', Length(Result.Minute) - Length(s)));
-  s := IntToStr(Sec);
-  StrPCopy(Result.Second,   StringOfChar('0', Length(Result.Second) - Length(s)));
-  s := IntToStr(MSec);
-  StrPCopy(Result.MSeconds, StringOfChar('0', Length(Result.MSeconds) - Length(s)));
-  s := IntToStr(Year);
-  StrPCopy(Result.Year,     StringOfChar('0', Length(Result.Year) - Length(s)));
-  s := IntToStr(Month);
-  StrPCopy(Result.Month,    StringOfChar('0', Length(Result.Month) - Length(s)));
-  s := IntToStr(Day);
-  StrPCopy(Result.Day,      StringOfChar('0', Length(Result.Day) - Length(s)));
 end;
 
 function RetrieveFileSize(const AFileName: string): LongWord;

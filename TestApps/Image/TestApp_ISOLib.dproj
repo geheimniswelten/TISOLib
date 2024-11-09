@@ -113,9 +113,6 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="MainForm.pas">
-            <Form>Form1</Form>
-        </DCCReference>
         <DCCReference Include="..\..\Library\Image\VolumeDescriptors.pas"/>
         <DCCReference Include="..\..\Library\Image\ImageFileHandler.pas"/>
         <DCCReference Include="..\..\Library\Image\ISOImage.pas"/>
@@ -125,6 +122,9 @@
         <DCCReference Include="..\..\Library\Misc\ISOIntStructs.pas"/>
         <DCCReference Include="..\..\Library\Misc\ISOStructs.pas"/>
         <DCCReference Include="..\..\Library\Misc\GlobalDefs.pas"/>
+        <DCCReference Include="MainForm.pas">
+            <Form>Form1</Form>
+        </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

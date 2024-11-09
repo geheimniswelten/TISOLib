@@ -46,7 +46,7 @@ begin
     DriveType := TDriveType(GetDriveType(PChar(DriveChar + ':\')));
     if DriveType in [dtCDROM] then
     begin
-      ComboBox1.Items.Add(Format('%s:\', [UpperCase(DriveChar)]));
+      ComboBox1.Items.Add(UpperCase(DriveChar) + ':\');
       DriveAdded := True;
     end;
   end;

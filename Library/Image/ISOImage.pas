@@ -49,7 +49,7 @@ type
     procedure Log(const AFunction, AMessage: string);
 
     function ParseDirectory(AUsePrimaryVD: Boolean=True): Boolean;
-    function ParseDirectorySub(AParentDir: TDirectoryEntry; const AFileName: string; var ADirectoryEntry: PDirectoryRecord): Boolean;
+    function ParseDirectorySub(AParentDir: TDirectoryEntry; const AFileName: AnsiString; var ADirectoryEntry: PDirectoryRecord): Boolean;
 
   public
     constructor Create(const AFileName: string; ALog: TStrings=nil); virtual;
@@ -60,7 +60,7 @@ type
     function ExtractFile(const AFileEntry: TFileEntry; const AFileName: string): Boolean;
     function CloseImage: Boolean;
 
-  published
+  public{published}
     property Filename  : string    read fFileName;
     property Structure : TDataTree read fTree;
   end;
@@ -128,7 +128,7 @@ begin
       begin
         DumpStr := DumpStr + IntToHex(Buffer^, 2) + ' ';
         if ( Buffer^ > 32 ) then
-          CharStr := CharStr + Chr(Buffer^)
+          CharStr := CharStr + Char(AnsiChar(Buffer^))
         else
           CharStr := CharStr + ' ';
         Inc(Buffer);
@@ -253,7 +253,7 @@ var
   DirRootSourceRec : TRootDirectoryRecord;
   EndSector   : Cardinal;
   DR          : PDirectoryRecord;
-  FileName    : string;
+  FileName    : AnsiString;
   lWorkPtr,
   lBuffer     : PByte;
 begin
@@ -297,7 +297,8 @@ begin
       Inc(lWorkPtr, SizeOf(TDirectoryRecord));
 
       SetLength(FileName, DR.LengthOfFileIdentifier);
-      Move(lWorkPtr^, FileName[1], DR.LengthOfFileIdentifier);
+      if ( DR.LengthOfFileIdentifier <> 0 ) then
+        Move(lWorkPtr^, FileName[1], DR.LengthOfFileIdentifier);
       Inc(lWorkPtr, DR.LengthOfFileIdentifier);
 
         // padding bytes
@@ -311,13 +312,13 @@ begin
   end;
 end;
 
-function TISOImage.ParseDirectorySub(AParentDir: TDirectoryEntry; const AFileName: string; var ADirectoryEntry: PDirectoryRecord): Boolean;
+function TISOImage.ParseDirectorySub(AParentDir: TDirectoryEntry; const AFileName: AnsiString; var ADirectoryEntry: PDirectoryRecord): Boolean;
 var
   EndSector   : Cardinal;
   OldPosition : Integer;
   ActDir      : TDirectoryEntry;
   FileEntry   : TFileEntry;
-  DRFileName  : string;
+  DRFileName  : AnsiString;
   DR          : PDirectoryRecord;
   lWorkPtr,
   lBuffer     : PByte;
@@ -358,7 +359,8 @@ begin
           Inc(lWorkPtr, SizeOf(TDirectoryRecord));
 
           SetLength(DRFileName, DR.LengthOfFileIdentifier);
-          Move(lWorkPtr^, DRFileName[1], DR.LengthOfFileIdentifier);
+          if ( DR.LengthOfFileIdentifier <> 0 ) then
+            Move(lWorkPtr^, DRFileName[1], DR.LengthOfFileIdentifier);
           Inc(lWorkPtr, DR.LengthOfFileIdentifier);
 
             // padding bytes
@@ -390,7 +392,7 @@ end;
 function TISOImage.ParsePathTable(ATreeView: TTreeView): Boolean;
 var
   PathTableEntry : TPathTableRecord;
-  FileName       : string;
+  FileName       : AnsiString;
   SectorCount    : Cardinal;
   Node           : TTreeNode;
   PathTabelEntryNumber : Integer;
@@ -438,7 +440,8 @@ begin
       Inc(lWorkPtr, SizeOf(PathTableEntry));
 
       SetLength(FileName, PathTableEntry.LengthOfDirectoryIdentifier);
-      Move(lWorkPtr^, FileName[1], PathTableEntry.LengthOfDirectoryIdentifier);
+      if ( PathTableEntry.LengthOfDirectoryIdentifier <> 0 ) then
+        Move(lWorkPtr^, FileName[1], PathTableEntry.LengthOfDirectoryIdentifier);
       Inc(lWorkPtr, PathTableEntry.LengthOfDirectoryIdentifier);
 
       if ( Odd(PathTableEntry.LengthOfDirectoryIdentifier) ) then
@@ -458,7 +461,7 @@ begin
       begin
         if ( Assigned(ATreeView) ) then
         begin
-          Node := ATreeView.Items.AddChild(FindParent(PathTableEntry.ParentDirectoryNumber), FileName);
+          Node := ATreeView.Items.AddChild(FindParent(PathTableEntry.ParentDirectoryNumber), string(FileName));
           Node.Data := Pointer(PathTabelEntryNumber);
         end;
       end;

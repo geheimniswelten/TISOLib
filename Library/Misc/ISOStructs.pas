@@ -24,13 +24,13 @@ type
   end;
 
   TVolumeDateTime = packed record
-    Year      : array[0..3] of Char;
-    Month     : array[0..1] of Char;
-    Day       : array[0..1] of Char;
-    Hour      : array[0..1] of Char;
-    Minute    : array[0..1] of Char;
-    Second    : array[0..1] of Char;
-    MSeconds  : array[0..1] of Char;
+    Year      : array[0..3] of AnsiChar;
+    Month     : array[0..1] of AnsiChar;
+    Day       : array[0..1] of AnsiChar;
+    Hour      : array[0..1] of AnsiChar;
+    Minute    : array[0..1] of AnsiChar;
+    Second    : array[0..1] of AnsiChar;
+    MSeconds  : array[0..1] of AnsiChar;
     GMTOffset : Byte;
   end;
 
@@ -108,11 +108,11 @@ type
   // Primary Volume Descriptor
   PPrimaryVolumeDescriptor = ^TPrimaryVolumeDescriptor;
   TPrimaryVolumeDescriptor = packed record
-    {0001h} StandardIdentifier               : array[0..4]  of Char;
+    {0001h} StandardIdentifier               : array[0..4]  of AnsiChar;
     {0006h} VolumeDescriptorVersion          : Byte;
     {0007h} unused                           : Byte;
-    {0007h} SystemIdentifier                 : array[0..31] of Char;
-    {0027h} VolumeIdentifier                 : array[0..31] of Char;
+    {0007h} SystemIdentifier                 : array[0..31] of AnsiChar;
+    {0027h} VolumeIdentifier                 : array[0..31] of AnsiChar;
     {0047h} Unused2                          : array[0..7]  of Byte;
     {0001h} VolumeSpaceSize                  : TBothEndianDWord;
     {0001h} Unused3                          : array[0..31] of Byte;
@@ -125,13 +125,13 @@ type
     {0001h} LocationOfTypeMPathTable         : LongWord;
     {0001h} LocationOfOptionalTypeMPathTable : LongWord;
     {0001h} RootDirectory                    : TRootDirectoryRecord;
-    {0001h} VolumeSetIdentifier              : array[0..127] of Char;
-    {0001h} PublisherIdentifier              : array[0..127] of Char;
-    {0001h} DataPreparerIdentifier           : array[0..127] of Char;
-    {0001h} ApplicationIdentifier            : array[0..127] of Char;
-    {0001h} CopyrightFileIdentifier          : array[0..36]  of Char;
-    {0001h} AbstractFileIdentifier           : array[0..36]  of Char;
-    {0001h} BibliographicFileIdentifier      : array[0..36]  of Char;
+    {0001h} VolumeSetIdentifier              : array[0..127] of AnsiChar;
+    {0001h} PublisherIdentifier              : array[0..127] of AnsiChar;
+    {0001h} DataPreparerIdentifier           : array[0..127] of AnsiChar;
+    {0001h} ApplicationIdentifier            : array[0..127] of AnsiChar;
+    {0001h} CopyrightFileIdentifier          : array[0..36]  of AnsiChar;
+    {0001h} AbstractFileIdentifier           : array[0..36]  of AnsiChar;
+    {0001h} BibliographicFileIdentifier      : array[0..36]  of AnsiChar;
     {0001h} VolumeCreationDateAndTime        : TVolumeDateTime;
     {0001h} VolumeModificationDateAndTime    : TVolumeDateTime;
     {0001h} VolumeExpirationDateAndTime      : TVolumeDateTime;
@@ -145,11 +145,11 @@ type
   // Supplementary Volume Descriptor
   PSupplementaryVolumeDescriptor = ^TSupplementaryVolumeDescriptor;
   TSupplementaryVolumeDescriptor = packed record
-    {0001h} StandardIdentifier               : array[0..4]  of Char;
+    {0001h} StandardIdentifier               : array[0..4]  of AnsiChar;
     {0006h} VolumeDescriptorVersion          : Byte;
     {0007h} VolumeFlags                      : Byte;
-    {0007h} SystemIdentifier                 : array[0..31] of Char;
-    {0027h} VolumeIdentifier                 : array[0..31] of Char;
+    {0007h} SystemIdentifier                 : array[0..31] of AnsiChar;
+    {0027h} VolumeIdentifier                 : array[0..31] of AnsiChar;
     {0047h} Unused2                          : array[0..7]  of Byte;
     {0001h} VolumeSpaceSize                  : TBothEndianDWord;
     {0001h} EscapeSequences                  : array[0..31] of Byte;
@@ -162,13 +162,13 @@ type
     {0001h} LocationOfTypeMPathTable         : LongWord;
     {0001h} LocationOfOptionalTypeMPathTable : LongWord;
     {0001h} RootDirectory                    : TRootDirectoryRecord;
-    {0001h} VolumeSetIdentifier              : array[0..127] of Char;
-    {0001h} PublisherIdentifier              : array[0..127] of Char;
-    {0001h} DataPreparerIdentifier           : array[0..127] of Char;
-    {0001h} ApplicationIdentifier            : array[0..127] of Char;
-    {0001h} CopyrightFileIdentifier          : array[0..36]  of Char;
-    {0001h} AbstractFileIdentifier           : array[0..36]  of Char;
-    {0001h} BibliographicFileIdentifier      : array[0..36]  of Char;
+    {0001h} VolumeSetIdentifier              : array[0..127] of AnsiChar;
+    {0001h} PublisherIdentifier              : array[0..127] of AnsiChar;
+    {0001h} DataPreparerIdentifier           : array[0..127] of AnsiChar;
+    {0001h} ApplicationIdentifier            : array[0..127] of AnsiChar;
+    {0001h} CopyrightFileIdentifier          : array[0..36]  of AnsiChar;
+    {0001h} AbstractFileIdentifier           : array[0..36]  of AnsiChar;
+    {0001h} BibliographicFileIdentifier      : array[0..36]  of AnsiChar;
     {0001h} VolumeCreationDateAndTime        : TVolumeDateTime;
     {0001h} VolumeModificationDateAndTime    : TVolumeDateTime;
     {0001h} VolumeExpirationDateAndTime      : TVolumeDateTime;
@@ -182,10 +182,10 @@ type
   // Boot Record Volume Descriptor
   PBootRecordVolumeDescriptor = ^TBootRecordVolumeDescriptor;
   TBootRecordVolumeDescriptor = packed record
-    StandardIdentifier               : array[0..4] of Char;
+    StandardIdentifier               : array[0..4] of AnsiChar;
     VersionOfDescriptor              : Byte;
-    BootSystemIdentifier             : array[0..31] of Char;
-    BootIdentifier                   : array[0..31] of Char;
+    BootSystemIdentifier             : array[0..31] of AnsiChar;
+    BootIdentifier                   : array[0..31] of AnsiChar;
     BootCatalogPointer               : LongWord;
     Unused                           : array[0..1972] of Byte;
   end;

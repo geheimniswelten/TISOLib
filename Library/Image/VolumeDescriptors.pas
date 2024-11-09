@@ -14,6 +14,7 @@ interface
 
 uses
   SysUtils,
+  AnsiStrings,
   Classes,
   ISOStructs,
   {}GlobalDefs,
@@ -25,8 +26,8 @@ type
 
   TPrimaryVolumeDescriptor = class
   private
-    function  GetString(AIndex : Integer): string;
-    procedure SetString(AIndex : Integer; const Value: string);
+    function  GetString(AIndex : Integer): AnsiString;
+    procedure SetString(AIndex : Integer; const Value: AnsiString);
 
   protected
     fDescriptor : TVolumeDescriptor;
@@ -38,18 +39,18 @@ type
 
     procedure Dump(AOutput: TStrings);
 
-  published
+  public{published}
     property Descriptor : TVolumeDescriptor  read fDescriptor;
 
-    property SystemIdentifier              : string  index 0  read GetString write SetString;
-    property VolumeIdentifier              : string  index 1  read GetString write SetString;
-    property VolumeSetIdentifier           : string  index 2  read GetString write SetString;
-    property PublisherIdentifier           : string  index 3  read GetString write SetString;
-    property DataPreparerIdentifier        : string  index 4  read GetString write SetString;
-    property ApplicationIdentifier         : string  index 5  read GetString write SetString;
-    property CopyrightFileIdentifier       : string  index 6  read GetString write SetString;
-    property AbstractFileIdentifier        : string  index 7  read GetString write SetString;
-    property BibliographicFileIdentifier   : string  index 8  read GetString write SetString;
+    property SystemIdentifier              : AnsiString  index 0  read GetString write SetString;
+    property VolumeIdentifier              : AnsiString  index 1  read GetString write SetString;
+    property VolumeSetIdentifier           : AnsiString  index 2  read GetString write SetString;
+    property PublisherIdentifier           : AnsiString  index 3  read GetString write SetString;
+    property DataPreparerIdentifier        : AnsiString  index 4  read GetString write SetString;
+    property ApplicationIdentifier         : AnsiString  index 5  read GetString write SetString;
+    property CopyrightFileIdentifier       : AnsiString  index 6  read GetString write SetString;
+    property AbstractFileIdentifier        : AnsiString  index 7  read GetString write SetString;
+    property BibliographicFileIdentifier   : AnsiString  index 8  read GetString write SetString;
     property VolumeCreationDateAndTime     : TVolumeDateTime  read fDescriptor.Primary.VolumeCreationDateAndTime        write fDescriptor.Primary.VolumeCreationDateAndTime;
     property VolumeModificationDateAndTime : TVolumeDateTime  read fDescriptor.Primary.VolumeModificationDateAndTime    write fDescriptor.Primary.VolumeModificationDateAndTime;
     property VolumeExpirationDateAndTime   : TVolumeDateTime  read fDescriptor.Primary.VolumeExpirationDateAndTime      write fDescriptor.Primary.VolumeExpirationDateAndTime;
@@ -68,8 +69,8 @@ type
 
   TSupplementaryVolumeDescriptor = class
   private
-    function  GetString(AIndex: Integer): string;
-    procedure SetString(AIndex: Integer; const Value: string);
+    function  GetString(AIndex: Integer): AnsiString;
+    procedure SetString(AIndex: Integer; const Value: AnsiString);
 
   protected
     fDescriptor : TVolumeDescriptor;
@@ -81,18 +82,18 @@ type
 
     procedure Dump(AOutput: TStrings);
 
-  published
+  public{published}
     property Descriptor : TVolumeDescriptor read fDescriptor;
 
-    property SystemIdentifier              : string  index 0  read GetString write SetString;
-    property VolumeIdentifier              : string  index 1  read GetString write SetString;
-    property VolumeSetIdentifier           : string  index 2  read GetString write SetString;
-    property PublisherIdentifier           : string  index 3  read GetString write SetString;
-    property DataPreparerIdentifier        : string  index 4  read GetString write SetString;
-    property ApplicationIdentifier         : string  index 5  read GetString write SetString;
-    property CopyrightFileIdentifier       : string  index 6  read GetString write SetString;
-    property AbstractFileIdentifier        : string  index 7  read GetString write SetString;
-    property BibliographicFileIdentifier   : string  index 8  read GetString write SetString;
+    property SystemIdentifier              : AnsiString  index 0  read GetString write SetString;
+    property VolumeIdentifier              : AnsiString  index 1  read GetString write SetString;
+    property VolumeSetIdentifier           : AnsiString  index 2  read GetString write SetString;
+    property PublisherIdentifier           : AnsiString  index 3  read GetString write SetString;
+    property DataPreparerIdentifier        : AnsiString  index 4  read GetString write SetString;
+    property ApplicationIdentifier         : AnsiString  index 5  read GetString write SetString;
+    property CopyrightFileIdentifier       : AnsiString  index 6  read GetString write SetString;
+    property AbstractFileIdentifier        : AnsiString  index 7  read GetString write SetString;
+    property BibliographicFileIdentifier   : AnsiString  index 8  read GetString write SetString;
     property VolumeCreationDateAndTime     : TVolumeDateTime  read fDescriptor.Supplementary.VolumeCreationDateAndTime        write fDescriptor.Supplementary.VolumeCreationDateAndTime;
     property VolumeModificationDateAndTime : TVolumeDateTime  read fDescriptor.Supplementary.VolumeModificationDateAndTime    write fDescriptor.Supplementary.VolumeModificationDateAndTime;
     property VolumeExpirationDateAndTime   : TVolumeDateTime  read fDescriptor.Supplementary.VolumeExpirationDateAndTime      write fDescriptor.Supplementary.VolumeExpirationDateAndTime;
@@ -112,8 +113,8 @@ type
 
   TBootRecordVolumeDescriptor = class
   private
-    function  GetString(AIndex : Integer): string;
-    procedure SetString(AIndex : Integer; const Value: string);
+    function  GetString(AIndex : Integer): AnsiString;
+    procedure SetString(AIndex : Integer; const Value: AnsiString);
 
   protected
     fDescriptor : TVolumeDescriptor;
@@ -125,12 +126,12 @@ type
 
     procedure Dump(AOutput: TStrings);
 
-  published
+  public{published}
     property Descriptor : TVolumeDescriptor read fDescriptor;
 
-    property BootSystemIdentifier : string  index 0  read GetString write SetString;
-    property BootIdentifier       : string  index 1  read GetString write SetString;
-    property BootCatalogPointer   : LongWord         read fDescriptor.BootRecord.BootCatalogPointer write fDescriptor.BootRecord.BootCatalogPointer;
+    property BootSystemIdentifier : AnsiString  index 0  read GetString write SetString;
+    property BootIdentifier       : AnsiString  index 1  read GetString write SetString;
+    property BootCatalogPointer   : LongWord read fDescriptor.BootRecord.BootCatalogPointer write fDescriptor.BootRecord.BootCatalogPointer;
   end;
 
 implementation
@@ -314,7 +315,7 @@ begin
   end;
 end;
 
-function TPrimaryVolumeDescriptor.GetString(AIndex: Integer): string;
+function TPrimaryVolumeDescriptor.GetString(AIndex: Integer): AnsiString;
 begin
   case AIndex of
     0 : Result := fDescriptor.Primary.SystemIdentifier;
@@ -329,22 +330,22 @@ begin
   end;
 end;
 
-procedure TPrimaryVolumeDescriptor.SetString(AIndex: Integer; const Value: string);
+procedure TPrimaryVolumeDescriptor.SetString(AIndex: Integer; const Value: AnsiString);
 begin
   // Since StrPCopy() is the easiest method to fill in a array of char, we use it
   // here, but we have to care about the length of the record, because StrPCopy()
   // will copy the given string completly, overwriting the following fields...
 
   case AIndex of
-    0 : StrPCopy(fDescriptor.Primary.SystemIdentifier,            Copy(Value, 1, Length(fDescriptor.Primary.SystemIdentifier)));
-    1 : StrPCopy(fDescriptor.Primary.VolumeIdentifier,            Copy(Value, 1, Length(fDescriptor.Primary.VolumeIdentifier)));
-    2 : StrPCopy(fDescriptor.Primary.VolumeSetIdentifier,         Copy(Value, 1, Length(fDescriptor.Primary.VolumeSetIdentifier)));
-    3 : StrPCopy(fDescriptor.Primary.PublisherIdentifier,         Copy(Value, 1, Length(fDescriptor.Primary.PublisherIdentifier)));
-    4 : StrPCopy(fDescriptor.Primary.DataPreparerIdentifier,      Copy(Value, 1, Length(fDescriptor.Primary.DataPreparerIdentifier)));
-    5 : StrPCopy(fDescriptor.Primary.ApplicationIdentifier,       Copy(Value, 1, Length(fDescriptor.Primary.ApplicationIdentifier)));
-    6 : StrPCopy(fDescriptor.Primary.CopyrightFileIdentifier,     Copy(Value, 1, Length(fDescriptor.Primary.CopyrightFileIdentifier)));
-    7 : StrPCopy(fDescriptor.Primary.AbstractFileIdentifier,      Copy(Value, 1, Length(fDescriptor.Primary.AbstractFileIdentifier)));
-    8 : StrPCopy(fDescriptor.Primary.BibliographicFileIdentifier, Copy(Value, 1, Length(fDescriptor.Primary.BibliographicFileIdentifier)));
+    0 : AnsiStrings.StrPCopy(fDescriptor.Primary.SystemIdentifier,            Copy(Value, 1, Length(fDescriptor.Primary.SystemIdentifier)));
+    1 : AnsiStrings.StrPCopy(fDescriptor.Primary.VolumeIdentifier,            Copy(Value, 1, Length(fDescriptor.Primary.VolumeIdentifier)));
+    2 : AnsiStrings.StrPCopy(fDescriptor.Primary.VolumeSetIdentifier,         Copy(Value, 1, Length(fDescriptor.Primary.VolumeSetIdentifier)));
+    3 : AnsiStrings.StrPCopy(fDescriptor.Primary.PublisherIdentifier,         Copy(Value, 1, Length(fDescriptor.Primary.PublisherIdentifier)));
+    4 : AnsiStrings.StrPCopy(fDescriptor.Primary.DataPreparerIdentifier,      Copy(Value, 1, Length(fDescriptor.Primary.DataPreparerIdentifier)));
+    5 : AnsiStrings.StrPCopy(fDescriptor.Primary.ApplicationIdentifier,       Copy(Value, 1, Length(fDescriptor.Primary.ApplicationIdentifier)));
+    6 : AnsiStrings.StrPCopy(fDescriptor.Primary.CopyrightFileIdentifier,     Copy(Value, 1, Length(fDescriptor.Primary.CopyrightFileIdentifier)));
+    7 : AnsiStrings.StrPCopy(fDescriptor.Primary.AbstractFileIdentifier,      Copy(Value, 1, Length(fDescriptor.Primary.AbstractFileIdentifier)));
+    8 : AnsiStrings.StrPCopy(fDescriptor.Primary.BibliographicFileIdentifier, Copy(Value, 1, Length(fDescriptor.Primary.BibliographicFileIdentifier)));
   end;
 end;
 
@@ -530,7 +531,7 @@ begin
   end;
 end;
 
-function TSupplementaryVolumeDescriptor.GetString(AIndex: Integer): string;
+function TSupplementaryVolumeDescriptor.GetString(AIndex: Integer): AnsiString;
 begin
   case AIndex of
     0 : Result := fDescriptor.Supplementary.SystemIdentifier;
@@ -545,22 +546,22 @@ begin
   end;
 end;
 
-procedure TSupplementaryVolumeDescriptor.SetString(AIndex: Integer; const Value: string);
+procedure TSupplementaryVolumeDescriptor.SetString(AIndex: Integer; const Value: AnsiString);
 begin
   // Since StrPCopy() is the easiest method to fill in a array of char, we use it
   // here, but we have to care about the length of the record, because StrPCopy()
   // will copy the given string completly, overwriting the following fields...
 
   case AIndex of
-    0 : StrPCopy(fDescriptor.Supplementary.SystemIdentifier,            Copy(Value, 1, Length(fDescriptor.Supplementary.SystemIdentifier)));
-    1 : StrPCopy(fDescriptor.Supplementary.VolumeIdentifier,            Copy(Value, 1, Length(fDescriptor.Supplementary.VolumeIdentifier)));
-    2 : StrPCopy(fDescriptor.Supplementary.VolumeSetIdentifier,         Copy(Value, 1, Length(fDescriptor.Supplementary.VolumeSetIdentifier)));
-    3 : StrPCopy(fDescriptor.Supplementary.PublisherIdentifier,         Copy(Value, 1, Length(fDescriptor.Supplementary.PublisherIdentifier)));
-    4 : StrPCopy(fDescriptor.Supplementary.DataPreparerIdentifier,      Copy(Value, 1, Length(fDescriptor.Supplementary.DataPreparerIdentifier)));
-    5 : StrPCopy(fDescriptor.Supplementary.ApplicationIdentifier,       Copy(Value, 1, Length(fDescriptor.Supplementary.ApplicationIdentifier)));
-    6 : StrPCopy(fDescriptor.Supplementary.CopyrightFileIdentifier,     Copy(Value, 1, Length(fDescriptor.Supplementary.CopyrightFileIdentifier)));
-    7 : StrPCopy(fDescriptor.Supplementary.AbstractFileIdentifier,      Copy(Value, 1, Length(fDescriptor.Supplementary.AbstractFileIdentifier)));
-    8 : StrPCopy(fDescriptor.Supplementary.BibliographicFileIdentifier, Copy(Value, 1, Length(fDescriptor.Supplementary.BibliographicFileIdentifier)));
+    0 : AnsiStrings.StrPCopy(fDescriptor.Supplementary.SystemIdentifier,            Copy(Value, 1, Length(fDescriptor.Supplementary.SystemIdentifier)));
+    1 : AnsiStrings.StrPCopy(fDescriptor.Supplementary.VolumeIdentifier,            Copy(Value, 1, Length(fDescriptor.Supplementary.VolumeIdentifier)));
+    2 : AnsiStrings.StrPCopy(fDescriptor.Supplementary.VolumeSetIdentifier,         Copy(Value, 1, Length(fDescriptor.Supplementary.VolumeSetIdentifier)));
+    3 : AnsiStrings.StrPCopy(fDescriptor.Supplementary.PublisherIdentifier,         Copy(Value, 1, Length(fDescriptor.Supplementary.PublisherIdentifier)));
+    4 : AnsiStrings.StrPCopy(fDescriptor.Supplementary.DataPreparerIdentifier,      Copy(Value, 1, Length(fDescriptor.Supplementary.DataPreparerIdentifier)));
+    5 : AnsiStrings.StrPCopy(fDescriptor.Supplementary.ApplicationIdentifier,       Copy(Value, 1, Length(fDescriptor.Supplementary.ApplicationIdentifier)));
+    6 : AnsiStrings.StrPCopy(fDescriptor.Supplementary.CopyrightFileIdentifier,     Copy(Value, 1, Length(fDescriptor.Supplementary.CopyrightFileIdentifier)));
+    7 : AnsiStrings.StrPCopy(fDescriptor.Supplementary.AbstractFileIdentifier,      Copy(Value, 1, Length(fDescriptor.Supplementary.AbstractFileIdentifier)));
+    8 : AnsiStrings.StrPCopy(fDescriptor.Supplementary.BibliographicFileIdentifier, Copy(Value, 1, Length(fDescriptor.Supplementary.BibliographicFileIdentifier)));
   end;
 end;
 
@@ -616,7 +617,7 @@ begin
   end;
 end;
 
-function TBootRecordVolumeDescriptor.GetString(AIndex: Integer): string;
+function TBootRecordVolumeDescriptor.GetString(AIndex: Integer): AnsiString;
 begin
   case AIndex of
     0 : Result := fDescriptor.BootRecord.BootSystemIdentifier;
@@ -624,15 +625,15 @@ begin
   end;
 end;
 
-procedure TBootRecordVolumeDescriptor.SetString(AIndex: Integer; const Value: string);
+procedure TBootRecordVolumeDescriptor.SetString(AIndex: Integer; const Value: AnsiString);
 begin
   // Since StrPCopy() is the easiest method to fill in a array of char, we use it
   // here, but we have to care about the length of the record, because StrPCopy()
   // will copy the given string completly, overwriting the following fields...
 
   case AIndex of
-    0 : StrPCopy(fDescriptor.BootRecord.BootSystemIdentifier, Copy(Value, 1, Length(fDescriptor.BootRecord.BootSystemIdentifier)));
-    1 : StrPCopy(fDescriptor.BootRecord.BootIdentifier,       Copy(Value, 1, Length(fDescriptor.BootRecord.BootIdentifier)));
+    0 : AnsiStrings.StrPCopy(fDescriptor.BootRecord.BootSystemIdentifier, Copy(Value, 1, Length(fDescriptor.BootRecord.BootSystemIdentifier)));
+    1 : AnsiStrings.StrPCopy(fDescriptor.BootRecord.BootIdentifier,       Copy(Value, 1, Length(fDescriptor.BootRecord.BootIdentifier)));
   end;
 end;
 

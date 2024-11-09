@@ -14,6 +14,8 @@ interface
 
 uses
   SysUtils,       // for FreeAndNil
+  Classes,
+  Types,
   Contnrs,        // for TObjectList
   ISOStructs,     // for TDirectoryRecord
   ISOException,   // for EISOLibContainerException
@@ -47,7 +49,7 @@ type
     fISOData     : TDirectoryRecord;
 
     // helper
-    fName        : string;
+    fName        : AnsiString;
 
     function AddFile(AFileEntry: TFileEntry): Integer;
     function DelFile(AFileEntry: TFileEntry): Boolean;
@@ -63,11 +65,11 @@ type
     property Files[Index: Integer]: TFileEntry            read GetFileEntry;
     property Directories[Index: Integer]: TDirectoryEntry read GetDirEntry;
 
-  published
+  public{published}
     property FileCount      : Integer          read GetFileCount;
     property DirectoryCount : Integer          read GetDirCount;
     property Parent         : TDirectoryEntry  read fParent;
-    property Name           : string           read fName    write fName;
+    property Name           : AnsiString       read fName    write fName;
     property ISOData        : TDirectoryRecord read fISOData write fISOData;
     property SourceOfData   : TDataSourceFlag  read fSource;
     property Flags          : TEntryFlags      read fFlags;
@@ -75,12 +77,12 @@ type
 
   TFileEntry = class
   private
-    function GetFullPath: string;
+    function GetFullPath: AnsiString;
 
   protected
     // management
     fDirectory   : TDirectoryEntry;
-    fName        : string;
+    fName        : AnsiString;
 
     // handling
     fSource      : TDataSourceFlag;
@@ -101,9 +103,9 @@ type
     // only valid, if SourceOfData = dsfFromLocal
     procedure FillISOData;
 
-  published
-    property Name           : string           read fName       write fName;
-    property Path           : string           read GetFullPath;
+  public{published}
+    property Name           : AnsiString       read fName       write fName;
+    property Path           : AnsiString       read GetFullPath;
 
     // ISO Data
     property ISOData        : TDirectoryRecord read fISOData    write fISOData;
@@ -120,7 +122,7 @@ type
   public
     constructor Create; virtual;
     destructor  Destroy; override;
-  published
+  public{published}
     property RootDirectory : TDirectoryEntry read fRootDir;
   end;
 
@@ -151,7 +153,7 @@ begin
   if ( fSource <> dsfFromLocal ) then
     raise EISOLibImageException.Create('not a local file entry, can not fill ISO structure...');
 
-  fName := ExtractFileName(fSourceFile);
+  fName := AnsiString(ExtractFileName(fSourceFile));
 
   with fISOData do
   begin
@@ -185,7 +187,7 @@ begin
   end;
 end;
 
-function TFileEntry.GetFullPath: string;
+function TFileEntry.GetFullPath: AnsiString;
 var
   ADir : TDirectoryEntry;
 begin
