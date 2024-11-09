@@ -13,201 +13,179 @@
 // $Id: ISOImage.pas,v 1.5 2004/06/15 15:33:29 muetze1 Exp $
 //
 
-Unit ISOImage;
+unit ISOImage;
 
-Interface
+interface
 
-Uses
+uses
+  SysUtils,           // for Exception
+  ComCtrls,           // for TTreeView
+  Classes,            // for TStrings
+  Math,               // for Min
   ISOStructs,
   ISOException,
   ImageFileHandler,
   DataTree,
   VolumeDescriptors,
-  SysUtils,           // for Exception
-  ComCtrls,           // for TTreeView
-  Classes;            // for TStrings
+  ISOToolBox;  // IntToMB
 
-Type
-  TISOImage = Class
-  Private
-      // Log Stream
-    fLog         : TStrings;
-    fFileName    : String;
+type
+  TISOImage = class
+  private
+    // Log Stream
+    fLog      : TStrings;
+    fFileName : string;
 
-      // debug functions:
-    Procedure   DumpData(Const ALength : Cardinal);
+    // debug functions:
+    procedure DumpData(ALength: Cardinal);
 
-  Protected
-    fImage         : TImageFileHandler;
-    fBRClass       : TBootRecordVolumeDescriptor;
-    fPVDClass      : TPrimaryVolumeDescriptor;
-    fSVDClass      : TSupplementaryVolumeDescriptor;
-    fTree          : TDataTree;
+  protected
+    fImage    : TImageFileHandler;
+    fBRClass  : TBootRecordVolumeDescriptor;
+    fPVDClass : TPrimaryVolumeDescriptor;
+    fSVDClass : TSupplementaryVolumeDescriptor;
+    fTree     : TDataTree;
 
-    Procedure   Log(Const AFunction, AMessage : String);
+    procedure Log(const AFunction, AMessage: string);
 
-    Function    ParseDirectory(Const AUsePrimaryVD : Boolean = True): Boolean;
-    Function    ParseDirectorySub(AParentDir : TDirectoryEntry; Const AFileName : String; Var ADirectoryEntry : PDirectoryRecord): Boolean;
+    function ParseDirectory(AUsePrimaryVD: Boolean=True): Boolean;
+    function ParseDirectorySub(AParentDir: TDirectoryEntry; const AFileName: string; var ADirectoryEntry: PDirectoryRecord): Boolean;
 
-  Public
-    Constructor Create(Const AFileName : String; ALog : TStrings = Nil); Virtual;
-    Destructor  Destroy; Override;
+  public
+    constructor Create(const AFileName: string; ALog: TStrings=nil); virtual;
+    destructor  Destroy; override;
 
-    Function    OpenImage: Boolean;
-    Function    ParsePathTable(ATreeView : TTreeView = Nil): Boolean;
-    Function    ExtractFile(Const AFileEntry: TFileEntry; Const AFileName : String): Boolean;
-    Function    CloseImage: Boolean;
+    function OpenImage: Boolean;
+    function ParsePathTable(ATreeView: TTreeView=nil): Boolean;
+    function ExtractFile(const AFileEntry: TFileEntry; const AFileName: string): Boolean;
+    function CloseImage: Boolean;
 
-  Published
-    Property    Filename    : String       Read  fFileName;
-    Property    Structure   : TDataTree    Read  fTree;
-  End;
+  published
+    property Filename  : string    read fFileName;
+    property Structure : TDataTree read fTree;
+  end;
 
-Implementation
+implementation
 
-Uses
-  ISOToolBox,  // IntToMB()
-  Math;        // for Min()
-
-Type
-  PByte = ^Byte;
-
-Const
-  UNIT_ID : String = '$Id: ISOImage.pas,v 1.5 2004/06/15 15:33:29 muetze1 Exp $';
+const
+  UNIT_ID : string = '$Id: ISOImage.pas,v 1.5 2004/06/15 15:33:29 muetze1 Exp $';
 
 { TISOLib }
 
-Constructor TISOImage.Create(const AFileName: String; ALog: TStrings);
-Begin
-  Inherited Create;
+constructor TISOImage.Create(const AFileName: string; ALog: TStrings);
+begin
+  inherited Create;
 
   fLog           := ALog;
   fFileName      := AFileName;
-  fImage         := Nil;
-  fPVDClass      := Nil;
-  fSVDClass      := Nil;
-  fBRClass       := Nil;
+  fImage         := nil;
+  fPVDClass      := nil;
+  fSVDClass      := nil;
+  fBRClass       := nil;
   fTree          := TDataTree.Create;
-End;
+end;
 
-Destructor TISOImage.Destroy;
-Begin
-  If ( Assigned(fTree) ) Then
-    FreeAndNil(fTree);
+destructor TISOImage.Destroy;
+begin
+  FreeAndNil(fTree);
+  FreeAndNil(fImage);
+  FreeAndNil(fPVDClass);
+  FreeAndNil(fSVDClass);
+  FreeAndNil(fBRClass);
+  inherited;
+end;
 
-  If ( Assigned(fImage) ) Then
-    FreeAndNil(fImage);
-
-  If ( Assigned(fPVDClass) ) Then
-    FreeAndNil(fPVDClass);
-
-  If ( Assigned(fSVDClass) ) Then
-    FreeAndNil(fSVDClass);
-     
-  If ( Assigned(fBRClass) ) Then
-    FreeAndNil(fBRClass);
-
-  Inherited;
-End;
-
-Function TISOImage.CloseImage: Boolean;
-Begin
+function TISOImage.CloseImage: Boolean;
+begin
   fFileName := '';
-
-  If Assigned(fImage) Then
-    FreeAndNil(fImage);
-  If Assigned(fPVDClass) Then
-    FreeAndNil(fPVDClass);
-  If Assigned(fSVDClass) Then
-    FreeAndNil(fSVDClass);
-  If Assigned(fBRClass) Then
-    FreeAndNil(fBRClass);
-  If Assigned(fTree) Then
-    FreeAndNil(fTree);
-
+  FreeAndNil(fImage);
+  FreeAndNil(fPVDClass);
+  FreeAndNil(fSVDClass);
+  FreeAndNil(fBRClass);
+  FreeAndNil(fTree);
   Result := True;
-End;
+end;
 
-Procedure TISOImage.DumpData(const ALength: Cardinal);
-Var
+procedure TISOImage.DumpData(ALength: Cardinal);
+var
   OrgPtr,
   Buffer   : PByte;
   Row      : Cardinal;
   Col      : Word;
   CharStr,
-  DumpStr  : String;
-Begin
+  DumpStr  : string;
+begin
   GetMem(Buffer, ALength);
   OrgPtr := Buffer;
-  Try
+  try
     fImage.Stream.ReadBuffer(Buffer^, ALength);
 
-    For Row := 0 To ((ALength-1) Div 16) Do
-    Begin
+    for Row := 0 to ((ALength-1) div 16) do
+    begin
       DumpStr := IntToHex(Cardinal(fImage.Stream.Position) - ALength + Row*16, 8) + 'h | ';
       CharStr := '';
-      For Col := 0 To Min(16, ALength - (Row+1)*16) Do
-      Begin
+      for Col := 0 to Min(16, ALength - (Row+1)*16) do
+      begin
         DumpStr := DumpStr + IntToHex(Buffer^, 2) + ' ';
-        If ( Buffer^ > 32 ) Then
+        if ( Buffer^ > 32 ) then
           CharStr := CharStr + Chr(Buffer^)
-        Else
+        else
           CharStr := CharStr + ' ';
         Inc(Buffer);
-      End;
+      end;
       DumpStr := DumpStr + StringOfChar(' ', 61-Length(DumpStr)) + '| ' + CharStr;
       Log('Dump', DumpStr);
-    End;
-  Finally
+    end;
+  finally
     FreeMem(OrgPtr, ALength);
-  End;
-End;
+  end;
+end;
 
-Function TISOImage.ExtractFile(Const AFileEntry: TFileEntry; Const AFileName: String): Boolean;
-Var
+function TISOImage.ExtractFile(const AFileEntry: TFileEntry; const AFileName: string): Boolean;
+var
   lFStream : TFileStream;
   lFSize   : Int64;
   lBuffer  : Pointer;
-Begin
+begin
   Result := False;
-  
-  If Assigned(AFileEntry) Then
-  Begin
+
+  if Assigned(AFileEntry) then
+  begin
     fImage.SeekSector(AFileEntry.ISOData.LocationOfExtent.LittleEndian);
 
     lFStream := TFileStream.Create(AFileName, fmCreate);
     lFSize   := AFileEntry.ISOData.DataLength.LittleEndian;
     GetMem(lBuffer, fImage.SectorDataSize);
-    Try
-      While ( lFSize > 0 ) Do
-      Begin
+    try
+      while ( lFSize > 0 ) do
+      begin
         fImage.ReadSector_Data(lBuffer^, fImage.SectorDataSize);
         lFStream.WriteBuffer(lBuffer^, Min(lFSize, fImage.SectorDataSize));
         Dec(lFSize, fImage.SectorDataSize);
-      End;
+      end;
 
       Result := True;
-    Finally
+    finally
       lFStream.Free;
       FreeMem(lBuffer, fImage.SectorDataSize);
-    End;
-  End;
-End;
+    end;
+  end;
+end;
 
-Procedure TISOImage.Log(Const AFunction, AMessage: String);
-Begin
-  If ( Assigned(fLog) ) Then
+procedure TISOImage.Log(const AFunction, AMessage: string);
+begin
+  if ( Assigned(fLog) ) then
     fLog.Add(AFunction + '(): ' + AMessage);
-End;
+end;
 
-Function TISOImage.OpenImage: Boolean;
-Var
+function TISOImage.OpenImage: Boolean;
+var
   VD : TVolumeDescriptor;
-Begin
+begin
   Result := False;
 
-  If ( FileExists(fFileName) ) Then
-  Begin
+  if ( FileExists(fFileName) ) then
+  begin
     fImage := TImageFileHandler.Create(fFileName, ifAuto);
 
     Log('OpenImage', 'file "' + fFileName + '" opened...');
@@ -215,110 +193,104 @@ Begin
       // die Sektor 0 bis Sektor 15 enthalten nur 0-Sektoren
     fImage.SeekSector(16);
 
-    If ( fImage.ImageFormat = ifCompleteSectors ) Then
+    if ( fImage.ImageFormat = ifCompleteSectors ) then
       Log('OpenImage', 'image contains RAW data')
-    Else If ( fImage.ImageFormat = ifOnlyData ) Then
+    else if ( fImage.ImageFormat = ifOnlyData ) then
       Log('OpenImage', 'image contains sector data');
 
-    If ( fImage.YellowBookFormat = ybfMode1 ) Then
+    if ( fImage.YellowBookFormat = ybfMode1 ) then
       Log('OpenImage', 'image contains yellow book mode 1 data')
-    Else If ( fImage.YellowBookFormat = ybfMode2 ) Then
+    else if ( fImage.YellowBookFormat = ybfMode2 ) then
       Log('OpenImage', 'image contains yellow book mode 2 data');
 
     Log('OpenImage', 'user data sector size is ' + IntToStr(fImage.SectorDataSize) + ' bytes');
     Log('OpenImage', 'image data offset in image file is ' + IntToStr(fImage.ImageOffset) + ' bytes');
 
-    If ( fImage.SectorDataSize <> 2048 ) Then
-    Begin
+    if ( fImage.SectorDataSize <> 2048 ) then
+    begin
       Log('OpenImage', 'sorry, but sector size other than 2048 bytes are not yet supported...');
       Exit;
-    End;
+    end;
 
-    Repeat
+    repeat
       fImage.ReadSector_Data(VD, SizeOf(TVolumeDescriptor));
 
-      Case Byte(VD.DescriptorType) Of
-        vdtBR  : Begin
+      case Byte(VD.DescriptorType) of
+        vdtBR  : begin
                    Log('OpenImage', 'Boot Record Volume Descriptor found'); // Boot Record VD
-
-                   If ( Assigned(fBRClass) ) Then // newer PVD
-                     fBRClass.Free;
+                   fBRClass.Free;
                    fBRClass := TBootRecordVolumeDescriptor.Create(VD);
                    // fBRClass.Dump(fLog);
-                 End;
-        vdtPVD : Begin
+                 end;
+        vdtPVD : begin
                    Log('OpenImage', 'Primary Volume Descriptor found');
-
-                   If ( Assigned(fPVDClass) ) Then // newer PVD
-                     fPVDClass.Free;
+                   fPVDClass.Free;
                    fPVDClass := TPrimaryVolumeDescriptor.Create(VD);
                    // fPVDClass.Dump(fLog);
-                 End;
-        vdtSVD : Begin
+                 end;
+        vdtSVD : begin
                    Log('OpenImage', 'Supplementary Volume Descriptor found'); // Supplementary Volume Descriptor
-
-                   If ( Assigned(fSVDClass) ) Then // newer PVD
-                     fSVDClass.Free;
+                   fSVDClass.Free;
                    fSVDClass := TSupplementaryVolumeDescriptor.Create(VD);
                    // fSVDClass.Dump(fLog);
-                 End;
-      End;
-    Until ( VD.DescriptorType = vdtVDST );
+                 end;
+      end;
+    until ( VD.DescriptorType = vdtVDST );
 
     ParseDirectory;
 
     Result := True;
-  End
-  Else
-  Begin
+  end
+  else
+  begin
     Log('OpenImage', 'file "' + fFileName + '" not found');
-    Raise EISOLibImageException.Create('image file not found');
-  End;
-End;
+    raise EISOLibImageException.Create('image file not found');
+  end;
+end;
 
-Function TISOImage.ParseDirectory(Const AUsePrimaryVD : Boolean): Boolean;
-Var
+function TISOImage.ParseDirectory(AUsePrimaryVD: Boolean): Boolean;
+var
   DirRootSourceRec : TRootDirectoryRecord;
   EndSector   : Cardinal;
   DR          : PDirectoryRecord;
-  FileName    : String;
+  FileName    : string;
   lWorkPtr,
   lBuffer     : PByte;
-Begin
+begin
   Result := False;
 
-  If ( AUsePrimaryVD ) Then
-  Begin
+  if ( AUsePrimaryVD ) then
+  begin
     Log('ParseDirectory', 'parsing directory using primary volume descriptor...');
     DirRootSourceRec := fPVDClass.Descriptor.Primary.RootDirectory;
-  End
-  Else
-  Begin
+  end
+  else
+  begin
     Log('ParseDirectory', 'parsing directory using supplementary volume descriptor...');
-    If Not Assigned(fSVDClass) Then
-      Raise EISOLibImageException.Create('no supplementary volume descriptor found!');
-      
+    if not Assigned(fSVDClass) then
+      raise EISOLibImageException.Create('no supplementary volume descriptor found!');
+
     DirRootSourceRec := fSVDClass.Descriptor.Primary.RootDirectory;
-  End;
+  end;
   Log('ParseDirectory', 'directory sector ' + IntToStr(DirRootSourceRec.LocationOfExtent.LittleEndian));
 
-  EndSector := DirRootSourceRec.LocationOfExtent.LittleEndian +
-               ( DirRootSourceRec.DataLength.LittleEndian + fImage.SectorDataSize-1 ) Div fImage.SectorDataSize;
+  EndSector := DirRootSourceRec.LocationOfExtent.LittleEndian
+             + ( DirRootSourceRec.DataLength.LittleEndian + fImage.SectorDataSize-1 ) div fImage.SectorDataSize;
 
   fImage.SeekSector(DirRootSourceRec.LocationOfExtent.LittleEndian);
 
   GetMem(lBuffer, fImage.SectorDataSize);
-  Try
+  try
     lWorkPtr := lBuffer;
     fImage.ReadSector_Data(lWorkPtr^, fImage.SectorDataSize);
 
-    While ( fImage.CurrentSector <= EndSector ) Do
-    Begin
-      If ( fImage.SectorDataSize - ( Cardinal(lWorkPtr) - Cardinal(lBuffer) )) < SizeOf(TDirectoryRecord) Then
-      Begin
+    while ( fImage.CurrentSector <= EndSector ) do
+    begin
+      if ( fImage.SectorDataSize - ( Cardinal(lWorkPtr) - Cardinal(lBuffer) )) < SizeOf(TDirectoryRecord) then
+      begin
         lWorkPtr := lBuffer;
         fImage.ReadSector_Data(lWorkPtr^, fImage.SectorDataSize);
-      End;
+      end;
 
       New(DR);
       Move(lWorkPtr^, DR^, SizeOf(TDirectoryRecord));
@@ -329,57 +301,57 @@ Begin
       Inc(lWorkPtr, DR.LengthOfFileIdentifier);
 
         // padding bytes
-      If ( ( SizeOf(TDirectoryRecord) + DR.LengthOfFileIdentifier ) < DR.LengthOfDirectoryRecord ) Then
+      if ( ( SizeOf(TDirectoryRecord) + DR.LengthOfFileIdentifier ) < DR.LengthOfDirectoryRecord ) then
         Inc(lWorkPtr, DR.LengthOfDirectoryRecord - SizeOf(TDirectoryRecord) - DR.LengthOfFileIdentifier);
 
       ParseDirectorySub(fTree.RootDirectory, FileName, DR);
-    End;
-  Finally
+    end;
+  finally
     FreeMem(lBuffer, fImage.SectorDataSize);
-  End;
-End;
+  end;
+end;
 
-Function TISOImage.ParseDirectorySub(AParentDir : TDirectoryEntry; Const AFileName : String; Var ADirectoryEntry : PDirectoryRecord): Boolean;
-Var
+function TISOImage.ParseDirectorySub(AParentDir: TDirectoryEntry; const AFileName: string; var ADirectoryEntry: PDirectoryRecord): Boolean;
+var
   EndSector   : Cardinal;
   OldPosition : Integer;
   ActDir      : TDirectoryEntry;
   FileEntry   : TFileEntry;
-  DRFileName  : String;
+  DRFileName  : string;
   DR          : PDirectoryRecord;
   lWorkPtr,
   lBuffer     : PByte;
-Begin
-  If ( ADirectoryEntry.FileFlags And $2 ) = $2 Then // directory
-  Begin
+begin
+  if ( ADirectoryEntry.FileFlags and $2 ) = $2 then // directory
+  begin
     OldPosition := fImage.CurrentSector;
 
-    If ( AFileName <> #0 ) And ( AFileName <> #1 ) Then
-    Begin
+    if ( AFileName <> #0 ) and ( AFileName <> #1 ) then
+    begin
       ActDir := TDirectoryEntry.Create(fTree, AParentDir, dsfFromImage);
       ActDir.Name    := AFileName;
       ActDir.ISOData := ADirectoryEntry^;
 
       fImage.SeekSector(ADirectoryEntry.LocationOfExtent.LittleEndian);
 
-      EndSector := ADirectoryEntry.LocationOfExtent.LittleEndian +
-                   ( ADirectoryEntry.DataLength.LittleEndian + fImage.SectorDataSize-1 ) Div fImage.SectorDataSize;
+      EndSector := ADirectoryEntry.LocationOfExtent.LittleEndian
+                 + ( ADirectoryEntry.DataLength.LittleEndian + fImage.SectorDataSize-1 ) div fImage.SectorDataSize;
 
       Dispose(ADirectoryEntry);
-      ADirectoryEntry := Nil;
+      ADirectoryEntry := nil;
 
       GetMem(lBuffer, fImage.SectorDataSize);
       Try
         lWorkPtr := lBuffer;
         fImage.ReadSector_Data(lWorkPtr^, fImage.SectorDataSize);
 
-        While ( fImage.CurrentSector <= EndSector ) Do
-        Begin
-          If ( fImage.SectorDataSize - ( Cardinal(lWorkPtr) - Cardinal(lBuffer) )) < SizeOf(TDirectoryRecord) Then
-          Begin
+        while ( fImage.CurrentSector <= EndSector ) do
+        begin
+          if ( fImage.SectorDataSize - ( Cardinal(lWorkPtr) - Cardinal(lBuffer) )) < SizeOf(TDirectoryRecord) then
+          begin
             lWorkPtr := lBuffer;
             fImage.ReadSector_Data(lWorkPtr^, fImage.SectorDataSize);
-          End;
+          end;
 
           New(DR);
           Move(lWorkPtr^, DR^, SizeOf(TDirectoryRecord));
@@ -390,35 +362,35 @@ Begin
           Inc(lWorkPtr, DR.LengthOfFileIdentifier);
 
             // padding bytes
-          If ( ( SizeOf(TDirectoryRecord) + DR.LengthOfFileIdentifier ) < DR.LengthOfDirectoryRecord ) Then
+          if ( ( SizeOf(TDirectoryRecord) + DR.LengthOfFileIdentifier ) < DR.LengthOfDirectoryRecord ) then
             Inc(lWorkPtr, DR.LengthOfDirectoryRecord - SizeOf(TDirectoryRecord) - DR.LengthOfFileIdentifier);
 
           ParseDirectorySub(ActDir, DRFileName, DR);
-        End;
-      Finally
+        end;
+      finally
         FreeMem(lBuffer, fImage.SectorDataSize);
-      End;
-    End;
+      end;
+    end;
 
     fImage.SeekSector(OldPosition);
-  End
-  Else
-  Begin
-    If ( AFileName <> '' ) And ( ADirectoryEntry.DataLength.LittleEndian > 0 ) Then
-    Begin
+  end
+  else
+  begin
+    if ( AFileName <> '' ) and ( ADirectoryEntry.DataLength.LittleEndian > 0 ) then
+    begin
       FileEntry := TFileEntry.Create(AParentDir, dsfFromImage);
       FileEntry.Name    := AFileName;
       FileEntry.ISOData := ADirectoryEntry^;
-    End;
-  End;
+    end;
+  end;
 
   Result := True;
-End;
+end;
 
-Function TISOImage.ParsePathTable(ATreeView : TTreeView): Boolean;
-Var
+function TISOImage.ParsePathTable(ATreeView: TTreeView): Boolean;
+var
   PathTableEntry : TPathTableRecord;
-  FileName       : String;
+  FileName       : string;
   SectorCount    : Cardinal;
   Node           : TTreeNode;
   PathTabelEntryNumber : Integer;
@@ -426,42 +398,42 @@ Var
   lBuffer        : PByte;
   i              : Integer;
 
-  Function FindParent(Const AParentPathNumber : Integer): TTreeNode;
-  Begin
+  function FindParent(AParentPathNumber: Integer): TTreeNode;
+  begin
     Result := ATreeView.Items.GetFirstNode;
 
-    While ( Integer(Result.Data) <> AParentPathNumber ) Do
+    while ( Integer(Result.Data) <> AParentPathNumber ) do
       Result := Result.GetNext;
-  End;
+  end;
 
-Begin
+begin
   Result := False;
 
   Log('ParsePathTable', 'path table first sector ' + IntToStr(fPVDClass.Descriptor.Primary.LocationOfTypeLPathTable));
   Log('ParsePathTable', 'path table length ' + IntToStr(fPVDClass.Descriptor.Primary.PathTableSize.LittleEndian) + ' bytes');
 
-  If ( Assigned(ATreeView) ) Then
+  if ( Assigned(ATreeView) ) then
     ATreeView.Items.Clear;
 
-  SectorCount := ( fPVDClass.Descriptor.Primary.PathTableSize.LittleEndian +
-                   fImage.SectorDataSize -1 ) Div fImage.SectorDataSize;
+  SectorCount := ( fPVDClass.Descriptor.Primary.PathTableSize.LittleEndian
+                 + fImage.SectorDataSize -1 ) div fImage.SectorDataSize;
 
   fImage.SeekSector(fPVDClass.Descriptor.Primary.LocationOfTypeLPathTable);
 
   GetMem(lBuffer, SectorCount * fImage.SectorDataSize);
   lWorkPtr := lBuffer;
-  Try
+  try
     PathTabelEntryNumber := 0;
 
-    For i := 1 To SectorCount Do
-    Begin
+    for i := 1 to SectorCount do
+    begin
       fImage.ReadSector_Data(lWorkPtr^, fImage.SectorDataSize);
       Inc(lWorkPtr, fImage.SectorDataSize);
-    End;
+    end;
 
     lWorkPtr := lBuffer;
 
-    Repeat
+    repeat
       Move(lWorkPtr^, PathTableEntry, SizeOf(PathTableEntry));
       Inc(lWorkPtr, SizeOf(PathTableEntry));
 
@@ -469,34 +441,34 @@ Begin
       Move(lWorkPtr^, FileName[1], PathTableEntry.LengthOfDirectoryIdentifier);
       Inc(lWorkPtr, PathTableEntry.LengthOfDirectoryIdentifier);
 
-      If ( Odd(PathTableEntry.LengthOfDirectoryIdentifier) ) Then
+      if ( Odd(PathTableEntry.LengthOfDirectoryIdentifier) ) then
         Inc(lWorkPtr, 1);
 
       Inc(PathTabelEntryNumber);
 
-      If ( PathTableEntry.LengthOfDirectoryIdentifier = 1 ) Then
-      Begin
-        If ( Assigned(ATreeView) ) And ( PathTabelEntryNumber = 1 ) Then
-        Begin
-          Node := ATreeView.Items.AddChild(Nil, '/');
+      if ( PathTableEntry.LengthOfDirectoryIdentifier = 1 ) then
+      begin
+        if ( Assigned(ATreeView) ) and ( PathTabelEntryNumber = 1 ) then
+        begin
+          Node := ATreeView.Items.AddChild(nil, '/');
           Node.Data := Pointer(PathTabelEntryNumber);
-        End;
-      End
-      Else
-      Begin
-        If ( Assigned(ATreeView) ) Then
-        Begin
+        end;
+      end
+      else
+      begin
+        if ( Assigned(ATreeView) ) then
+        begin
           Node := ATreeView.Items.AddChild(FindParent(PathTableEntry.ParentDirectoryNumber), FileName);
           Node.Data := Pointer(PathTabelEntryNumber);
-        End;
-      End;
-    Until ( (Cardinal(lWorkPtr) - Cardinal(lBuffer) ) >= fPVDClass.Descriptor.Primary.PathTableSize.LittleEndian );
-  Finally
+        end;
+      end;
+    until ( (Cardinal(lWorkPtr) - Cardinal(lBuffer) ) >= fPVDClass.Descriptor.Primary.PathTableSize.LittleEndian );
+  finally
     FreeMem(lBuffer, SectorCount * fImage.SectorDataSize);
-  End;
-End;
+  end;
+end;
 
-End.
+end.
 
 //  Log List
 //

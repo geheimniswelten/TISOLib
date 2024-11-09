@@ -8,34 +8,35 @@
 // $Id: ImageFileHandler.pas,v 1.4 2004/06/15 14:45:31 muetze1 Exp $
 //
 
-Unit ImageFileHandler;
+unit ImageFileHandler;
 
-Interface
+interface
 
-Uses
-  ISOException,
-  Classes;
+uses
+  SysUtils, // for FileExists
+  Classes,
+  ISOException;
 
-Type
-  EISOImageHandlerException = Class(EISOLibException);
+type
+  EISOImageHandlerException = class(EISOLibException);
 
-    // Yellow Book Format
-    //
-    //   ybfAuto   = auto detect
-    //   ybfMode1  = 2048 byte user data
-    //   ybfMode2  = 2336 byte user data
-    //
+  // Yellow Book Format
+  //
+  //   ybfAuto   = auto detect
+  //   ybfMode1  = 2048 byte user data
+  //   ybfMode2  = 2336 byte user data
+  //
   TISOYellowBookFormat = (ybfAuto, ybfMode1, ybfMode2);
 
-    // Image Format
-    //
-    //   ifCompleteSectors  = with SYNC, Header, etc
-    //   ifOnlyData         = only the user data
-    //
+  // Image Format
+  //
+  //   ifCompleteSectors  = with SYNC, Header, etc
+  //   ifOnlyData         = only the user data
+  //
   TISOImageFormat = (ifAuto, ifCompleteSectors, ifOnlyData);
 
-  TImageFileHandler = Class
-  Private
+  TImageFileHandler = class
+  private
     fYellowBookFormat : TISOYellowBookFormat;
     fImageFormat      : TISOImageFormat;
 
@@ -44,255 +45,246 @@ Type
 
     fCurrentSector    : Cardinal;
 
-  Protected
-    Procedure    DetectImageType; Virtual;
-    Function     CalcSectorOffset(Const ASector : Cardinal): Integer; Virtual;
-    Function     CalcUserDataOffset: Integer; Virtual;
-    Function     GetSectorDataSize: Cardinal; Virtual;
+  protected
+    procedure DetectImageType; virtual;
+    function  CalcSectorOffset(ASector: Cardinal): Integer; virtual;
+    function  CalcUserDataOffset: Integer; virtual;
+    function  GetSectorDataSize: Cardinal; virtual;
 
-  Public
-    Constructor  Create(Const AFileName : String; Const AImageFormat : TISOImageFormat); Overload; Virtual;
-    Constructor  Create(Const ANewFileName : String; Const AYellowBookFormat : TISOYellowBookFormat; Const AImageFormat : TISOImageFormat); Overload; Virtual;
-    Destructor   Destroy; Override;
+  public
+    constructor Create(const AFileName: string; AImageFormat: TISOImageFormat); overload; virtual;
+    constructor Create(const ANewFileName: string; AYellowBookFormat: TISOYellowBookFormat; AImageFormat: TISOImageFormat); overload; virtual;
+    destructor  Destroy; override;
 
-    Function     SeekSector(Const ASector : Cardinal; Const AGrow : Boolean = True): Boolean; Virtual;
+    function SeekSector(ASector: Cardinal; AGrow: Boolean=True): Boolean; virtual;
 
-    Function     ReadSector_Data(Var ABuffer; Const ABufferSize : Integer = -1): Boolean; Virtual;
-    Function     ReadSector_Raw (Var ABuffer; Const ABufferSize : Integer = -1): Boolean; Virtual;
+    function ReadSector_Data(var ABuffer; ABufferSize: Integer=-1): Boolean; virtual;
+    function ReadSector_Raw (var ABuffer; ABufferSize: Integer=-1): Boolean; virtual;
 
-  Published
-    Property     YellowBookFormat : TISOYellowBookFormat   Read  fYellowBookFormat;
-    Property     ImageFormat      : TISOImageFormat        Read  fImageFormat;
-    Property     ImageOffset      : Cardinal               Read  fImageOffset;
-    Property     SectorDataSize   : Cardinal               Read  GetSectorDataSize;
-    Property     CurrentSector    : Cardinal               Read  fCurrentSector;
+  published
+    property YellowBookFormat : TISOYellowBookFormat read fYellowBookFormat;
+    property ImageFormat      : TISOImageFormat      read fImageFormat;
+    property ImageOffset      : Cardinal             read fImageOffset;
+    property SectorDataSize   : Cardinal             read GetSectorDataSize;
+    property CurrentSector    : Cardinal             read fCurrentSector;
 
-    Property     Stream           : TFileStream            Read  fFileStream;           
-  End;
+    property Stream           : TFileStream          read fFileStream;
+  end;
 
-
-Implementation
-
-Uses
-  SysUtils; // for FileExists()
+implementation
 
 { TImageFileHandler }
 
-Constructor TImageFileHandler.Create(Const AFileName: String; Const AImageFormat: TISOImageFormat);
-Begin
-  Inherited Create;
+constructor TImageFileHandler.Create(const AFileName: string; AImageFormat: TISOImageFormat);
+begin
+  inherited Create;
 
-  If ( Not FileExists(AFileName) ) Then
-    Raise EISOImageHandlerException.Create('image file not found');
+  if ( not FileExists(AFileName) ) then
+    raise EISOImageHandlerException.Create('image file not found');
 
-  fFileStream := TFileStream.Create(AFileName, fmOpenReadWrite Or fmShareDenyNone);
+  fFileStream := TFileStream.Create(AFileName, fmOpenReadWrite or fmShareDenyNone);
 
   DetectImageType;
 
   SeekSector(fCurrentSector);
-End;
+end;
 
-Constructor TImageFileHandler.Create(Const ANewFileName : String; Const AYellowBookFormat: TISOYellowBookFormat; Const AImageFormat: TISOImageFormat);
-Begin
-  Inherited Create;
+constructor TImageFileHandler.Create(const ANewFileName: string; AYellowBookFormat: TISOYellowBookFormat; AImageFormat: TISOImageFormat);
+begin
+  inherited Create;
 
-  If ( AYellowBookFormat = ybfAuto ) Then
-    Raise EISOImageHandlerException.Create('yellow book format has to be defined!');
+  if ( AYellowBookFormat = ybfAuto ) then
+    raise EISOImageHandlerException.Create('yellow book format has to be defined!');
 
-  If ( AImageFormat = ifAuto ) Then
-    Raise EISOImageHandlerException.Create('image format has to be defined!');
+  if ( AImageFormat = ifAuto ) then
+    raise EISOImageHandlerException.Create('image format has to be defined!');
 
   fYellowBookFormat  := AYellowBookFormat;
   fImageFormat       := AImageFormat;
   fImageOffset       := 0;
 
-  fFileStream := TFileStream.Create(ANewFileName, fmCreate Or fmShareDenyNone);
+  fFileStream := TFileStream.Create(ANewFileName, fmCreate or fmShareDenyNone);
 
   SeekSector(fCurrentSector);
-End;
+end;
 
-Destructor TImageFileHandler.Destroy;
-Begin
-  If ( Assigned(fFileStream) ) Then
-    FreeAndNil(fFileStream);
+destructor TImageFileHandler.Destroy;
+begin
+  FreeAndNil(fFileStream);
+  inherited;
+end;
 
-  Inherited;
-End;
+function TImageFileHandler.CalcUserDataOffset: Integer;
+begin
+  case fImageFormat of
+    ifCompleteSectors : Result := 16; // 12 bytes SYNC, 4 byte Header
+    ifOnlyData        : Result := 0;
+    ifAuto            : raise EISOImageHandlerException.Create('can not calculate sector offset with auto values!');
+    else                raise EISOImageHandlerException.Create('TImageFileHandler.CalcUserDataOffset(): Implementation error!');
+  end;
+end;
 
-Function TImageFileHandler.CalcUserDataOffset: Integer;
-Begin
-  Case fImageFormat Of
-    ifCompleteSectors  : Result := 16; // 12 bytes SYNC, 4 byte Header
-    ifOnlyData         : Result := 0;
-    ifAuto             : Raise EISOImageHandlerException.Create('can not calculate sector offset with auto values!');
-  Else
-    Raise EISOImageHandlerException.Create('TImageFileHandler.CalcUserDataOffset(): Implementation error!');
-  End;
-End;
-
-Function TImageFileHandler.CalcSectorOffset(Const ASector: Cardinal): Integer;
-Begin
-  Case fImageFormat Of
+function TImageFileHandler.CalcSectorOffset(ASector: Cardinal): Integer;
+begin
+  case fImageFormat of
     ifCompleteSectors : Result := fImageOffset + ASector * 2352;
     ifOnlyData        :
-      Begin
-        Case fYellowBookFormat Of
+      begin
+        case fYellowBookFormat of
           ybfMode1 : Result := fImageOffset + ASector * 2048;
           ybfMode2 : Result := fImageOffset + ASector * 2336;
-          ybfAuto  : Raise EISOImageHandlerException.Create('can not calculate sector with auto settings');
-        Else
-          Raise EISOImageHandlerException.Create('TImageFileHandler.CalcSectorOffset(): Implementation error!');
-        End;
-      End;
-    ifAuto : Raise EISOImageHandlerException.Create('can not calculate sector with auto settings');
-  Else
-    Raise EISOImageHandlerException.Create('TImageFileHandler.CalcSectorOffset(): Implementation error!');
-  End;
-End;
+          ybfAuto  : raise EISOImageHandlerException.Create('can not calculate sector with auto settings');
+        else
+          raise EISOImageHandlerException.Create('TImageFileHandler.CalcSectorOffset(): Implementation error!');
+        end;
+      end;
+    ifAuto : raise EISOImageHandlerException.Create('can not calculate sector with auto settings');
+    else     raise EISOImageHandlerException.Create('TImageFileHandler.CalcSectorOffset(): Implementation error!');
+  end;
+end;
 
-Procedure TImageFileHandler.DetectImageType;
-Type
-  TCheckBuf = Packed Record
+procedure TImageFileHandler.DetectImageType;
+type
+  TCheckBuf = packed record
     DeskID : Byte;
-    StdID  : Array[0..4] Of Char;
-  End;
-  TRawCheckBuf = Packed Record
-    SYNC   : Array[0..11] of Byte;
+    StdID  : array[0..4] of Char;
+  end;
+  TRawCheckBuf = packed record
+    SYNC   : array[0..11] of Byte;
     Header_SectMin,
     Header_SectSec,
     Header_SectNo,
-    Header_Mode    : Byte;
-    Deskriptor : TCheckBuf;
-  End;
-Var
+    Header_Mode  : Byte;
+    Deskriptor   : TCheckBuf;
+  end;
+var
   Buff    : TCheckBuf;
   RawBuff : TRawCheckBuf;
   Tries   : Boolean;
-Begin
+begin
   fYellowBookFormat := ybfAuto;
   fImageFormat      := ifAuto;
   fImageOffset      := 0;
 
-  If ( Assigned(fFileStream) ) And ( fFileStream.Size > 16*2048 ) Then
-  Begin
-    For Tries := False To True Do
-    Begin
-      If ( Tries ) Then // ok, 2nd run, last try: nero .nrg image file
+  if ( Assigned(fFileStream) ) and ( fFileStream.Size > 16*2048 ) then
+  begin
+    for Tries := False to True do
+    begin
+      if ( Tries ) then // ok, 2nd run, last try: nero .nrg image file
         fImageOffset := 307200;
 
       fFileStream.Position := fImageOffset + 16 * 2048;
       fFileStream.ReadBuffer(Buff, SizeOf(Buff));
 
-      If ( String(Buff.StdID) = 'CD001' ) Then
-      Begin
+      if ( string(Buff.StdID) = 'CD001' ) then
+      begin
         fImageFormat      := ifOnlyData;
         fYellowBookFormat := ybfMode1;
 
         Break;
-      End;
+      end;
 
       fFileStream.Position := fImageOffset + 16 * 2336;
       fFileStream.ReadBuffer(Buff, SizeOf(Buff));
 
-      If ( String(Buff.StdID) = 'CD001' ) Then
-      Begin
+      if ( string(Buff.StdID) = 'CD001' ) then
+      begin
         fImageFormat      := ifOnlyData;
         fYellowBookFormat := ybfMode2;
 
         Break;
-      End;
+      end;
 
       fFileStream.Position := fImageOffset + 16 * 2352;
       fFileStream.ReadBuffer(RawBuff, SizeOf(RawBuff));
 
-      If ( String(RawBuff.Deskriptor.StdID) = 'CD001' ) Then
-      Begin
+      if ( string(RawBuff.Deskriptor.StdID) = 'CD001' ) then
+      begin
         fImageFormat := ifCompleteSectors;
 
-        If ( RawBuff.Header_Mode = 1 ) Then
+        if ( RawBuff.Header_Mode = 1 ) then
           fYellowBookFormat := ybfMode1
-        Else If ( RawBuff.Header_Mode = 2 ) Then
+        else if ( RawBuff.Header_Mode = 2 ) then
           fYellowBookFormat := ybfMode2
-        Else
-          Raise EISOImageHandlerException.Create('unkown Yellow Book mode!');
+        else
+          raise EISOImageHandlerException.Create('unkown Yellow Book mode!');
 
         Break;
-      End;
-    End;
-  End;
+      end;
+    end;
+  end;
 
-  If ( fImageFormat = ifAuto ) Or ( fYellowBookFormat = ybfAuto ) Then
-    Raise EISOImageHandlerException.Create('unkown image format!');
-End;
+  if ( fImageFormat = ifAuto ) or ( fYellowBookFormat = ybfAuto ) then
+    raise EISOImageHandlerException.Create('unkown image format!');
+end;
 
-Function TImageFileHandler.SeekSector(Const ASector: Cardinal; Const AGrow: Boolean): Boolean;
-Var
+function TImageFileHandler.SeekSector(ASector: Cardinal; AGrow: Boolean): Boolean;
+var
   lFPos : Integer;
-Begin
+begin
   Result := False;
 
-  If ( Assigned(fFileStream) ) Then
-  Begin
+  if ( Assigned(fFileStream) ) then
+  begin
     lFPos := CalcSectorOffset(ASector);
 
-    If ( (lFPos+2048) > fFileStream.Size ) And ( Not AGrow ) Then
+    if ( (lFPos+2048) > fFileStream.Size ) and ( not AGrow ) then
       Exit;
 
     fFileStream.Position := lFPos;
 
     fCurrentSector := ASector;
-  End;
-End;
+  end;
+end;
 
-Function TImageFileHandler.ReadSector_Data(Var ABuffer; Const ABufferSize : Integer = -1): Boolean;
-Var
+function TImageFileHandler.ReadSector_Data(var ABuffer; ABufferSize: Integer=-1): Boolean;
+var
   lDataOffset : Integer;
-Begin
+begin
   Result := False;
 
-  If ( Assigned(fFileStream) ) Then
-  Begin
+  if ( Assigned(fFileStream) ) then
+  begin
     lDataOffset := CalcUserDataOffset;
 
     fFileStream.Seek(lDataOffset, soFromCurrent);
 
-    If ( ABufferSize > -1 ) And ( Cardinal(ABufferSize) < GetSectorDataSize ) Then
-      Raise EISOImageHandlerException.Create('TImageFileHandler.ReadSector_Data(): buffer overflow protection'); 
+    if ( ABufferSize > -1 ) and ( Cardinal(ABufferSize) < GetSectorDataSize ) then
+      raise EISOImageHandlerException.Create('TImageFileHandler.ReadSector_Data(): buffer overflow protection');
 
     fFileStream.ReadBuffer(ABuffer, GetSectorDataSize);
 
     SeekSector(fCurrentSector+1);
 
     Result := True;
-  End;
-End;
+  end;
+end;
 
-Function TImageFileHandler.ReadSector_Raw(Var ABuffer; Const ABufferSize : Integer = -1): Boolean;
-Begin
+function TImageFileHandler.ReadSector_Raw(var ABuffer; ABufferSize: Integer=-1): Boolean;
+begin
   Result := False;
 
-  If ( Assigned(fFileStream) ) Then
-  Begin
-    If ( ABufferSize > -1 ) And ( ABufferSize < 2352 ) Then
-      Raise EISOImageHandlerException.Create('TImageFileHandler.ReadSector_Raw(): buffer overflow protection'); 
+  if ( Assigned(fFileStream) ) then
+  begin
+    if ( ABufferSize > -1 ) and ( ABufferSize < 2352 ) then
+      raise EISOImageHandlerException.Create('TImageFileHandler.ReadSector_Raw(): buffer overflow protection');
 
     fFileStream.ReadBuffer(ABuffer, 2352);
 
     Result := True;
-  End;
-End;
+  end;
+end;
 
-Function TImageFileHandler.GetSectorDataSize: Cardinal;
-Begin
-  Case fYellowBookFormat Of
+function TImageFileHandler.GetSectorDataSize: Cardinal;
+begin
+  case fYellowBookFormat of
     ybfMode1 : Result := 2048;
     ybfMode2 : Result := 2336;
-  Else
-    Raise EISOImageHandlerException.Create('can not figure out sector data size on auto type');
-  End;
-End;
+    else       raise EISOImageHandlerException.Create('can not figure out sector data size on auto type');
+  end;
+end;
 
-End.
+end.
 
 //  Log List
 //
@@ -307,3 +299,4 @@ End.
 //
 //
 //
+

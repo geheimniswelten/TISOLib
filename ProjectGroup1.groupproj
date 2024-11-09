@@ -1,0 +1,60 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{0394F2DE-5C8E-4CC0-9880-9E46F844B1C3}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="Library\ISOLib.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="TestApps\DeviceIO\TestApp_DeviceIO.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="TestApps\Image\TestApp_ISOLib.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="ISOLib">
+        <MSBuild Projects="Library\ISOLib.dproj"/>
+    </Target>
+    <Target Name="ISOLib:Clean">
+        <MSBuild Projects="Library\ISOLib.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ISOLib:Make">
+        <MSBuild Projects="Library\ISOLib.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="TestApp_DeviceIO">
+        <MSBuild Projects="TestApps\DeviceIO\TestApp_DeviceIO.dproj"/>
+    </Target>
+    <Target Name="TestApp_DeviceIO:Clean">
+        <MSBuild Projects="TestApps\DeviceIO\TestApp_DeviceIO.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="TestApp_DeviceIO:Make">
+        <MSBuild Projects="TestApps\DeviceIO\TestApp_DeviceIO.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="TestApp_ISOLib">
+        <MSBuild Projects="TestApps\Image\TestApp_ISOLib.dproj"/>
+    </Target>
+    <Target Name="TestApp_ISOLib:Clean">
+        <MSBuild Projects="TestApps\Image\TestApp_ISOLib.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="TestApp_ISOLib:Make">
+        <MSBuild Projects="TestApps\Image\TestApp_ISOLib.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="ISOLib;TestApp_DeviceIO;TestApp_ISOLib"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="ISOLib:Clean;TestApp_DeviceIO:Clean;TestApp_ISOLib:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="ISOLib:Make;TestApp_DeviceIO:Make;TestApp_ISOLib:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

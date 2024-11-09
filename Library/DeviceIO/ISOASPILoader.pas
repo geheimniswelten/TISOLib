@@ -8,72 +8,72 @@
 // $Id: ISOASPILoader.pas,v 1.3 2004/06/07 02:24:41 nalilord Exp $
 //
 
-Unit ISOASPILoader;
+unit ISOASPILoader;
 
-Interface
+interface
 
-Uses
+uses
   Windows,
   ISOSCSIStructs;
 
-Var
+var
   WNASPI32_Loaded         : Boolean                 = False;
-  SendASPI32Command       : TSendASPI32Command      = Nil;
-  GetASPI32SupportInfo    : TGetASPI32SupportInfo   = Nil;
-  GetASPI32Buffer         : TGetASPI32Buffer        = Nil;
-  FreeASPI32Buffer        : TFreeASPI32Buffer       = Nil;
-  TranslateASPI32Address  : TTranslateASPI32Address = Nil;
+  SendASPI32Command       : TSendASPI32Command      = nil;
+  GetASPI32SupportInfo    : TGetASPI32SupportInfo   = nil;
+  GetASPI32Buffer         : TGetASPI32Buffer        = nil;
+  FreeASPI32Buffer        : TFreeASPI32Buffer       = nil;
+  TranslateASPI32Address  : TTranslateASPI32Address = nil;
 
-Const
+const
   WNASPI32_Lib = 'wnaspi32.dll';
 
-Function InitializeASPI: Boolean;
-Function UnInitializeASPI: Boolean;
+function InitializeASPI: Boolean;
+function UnInitializeASPI: Boolean;
 
-Implementation
+implementation
 
-Var
+var
   WNASPI32_Instance : THandle = 0;
 
-Function InitializeASPI:Boolean;
-Begin
+function InitializeASPI: Boolean;
+begin
   Result          := False;
   WNASPI32_Loaded := False;
 
   WNASPI32_Instance := LoadLibrary(PChar(WNASPI32_Lib));
-  If ( WNASPI32_Instance <> 0 ) Then
-  Begin
-    @SendASPI32Command      := GetProcAddress(WNASPI32_Instance,'SendASPI32Command');
-    @GetASPI32SupportInfo   := GetProcAddress(WNASPI32_Instance,'GetASPI32SupportInfo');
-    @GetASPI32Buffer        := GetProcAddress(WNASPI32_Instance,'GetASPI32Buffer');
-    @FreeASPI32Buffer       := GetProcAddress(WNASPI32_Instance,'FreeASPI32Buffer');
-    @TranslateASPI32Address := GetProcAddress(WNASPI32_Instance,'TranslateASPI32Address');
+  if ( WNASPI32_Instance <> 0 ) then
+  begin
+    @SendASPI32Command      := GetProcAddress(WNASPI32_Instance, 'SendASPI32Command');
+    @GetASPI32SupportInfo   := GetProcAddress(WNASPI32_Instance, 'GetASPI32SupportInfo');
+    @GetASPI32Buffer        := GetProcAddress(WNASPI32_Instance, 'GetASPI32Buffer');
+    @FreeASPI32Buffer       := GetProcAddress(WNASPI32_Instance, 'FreeASPI32Buffer');
+    @TranslateASPI32Address := GetProcAddress(WNASPI32_Instance, 'TranslateASPI32Address');
 
     WNASPI32_Loaded := True;
     Result          := True;
-  End;
-End;
+  end;
+end;
 
-Function UnInitializeASPI: Boolean;
-Begin
+function UnInitializeASPI: Boolean;
+begin
   Result := False;
 
-  If WNASPI32_Loaded Then
-  Begin
+  if WNASPI32_Loaded then
+  begin
     WNASPI32_Loaded   := FreeLibrary(WNASPI32_Instance);
     WNASPI32_Instance := 0;
 
-    @SendASPI32Command      := Nil;
-    @GetASPI32SupportInfo   := Nil;
-    @GetASPI32Buffer        := Nil;
-    @FreeASPI32Buffer       := Nil;
-    @TranslateASPI32Address := Nil;
+    @SendASPI32Command      := nil;
+    @GetASPI32SupportInfo   := nil;
+    @GetASPI32Buffer        := nil;
+    @FreeASPI32Buffer       := nil;
+    @TranslateASPI32Address := nil;
 
     Result := True;
-  End;
-End;
+  end;
+end;
 
-End.
+end.
 
 //  Log List
 //

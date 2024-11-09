@@ -1,4 +1,4 @@
-Program ISOLib;
+program ISOLib;
 
 {%ToDo 'ISOLib.todo'}
 
@@ -18,9 +18,10 @@ uses
   ISOIntStructs in 'Misc\ISOIntStructs.pas',
   GlobalDefs in 'Misc\GlobalDefs.pas';
 
-{$R *.RES}
+{$R *.res}
 
-Begin
+begin
   Application.Initialize;
   Application.Run;
-End.
+end.
+

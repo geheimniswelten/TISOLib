@@ -58,14 +58,8 @@ type
     procedure sm_File_CloseClick(Sender: TObject);
     procedure tv_DirectoryChange(Sender: TObject; Node: TTreeNode);
   private
-    { Private-Deklarationen }
-
     fISOImage  : TISOImage;
-
-    Procedure  BuildStructureTree(ATV: TTreeView; RootNode : TTreeNode; ADirEntry : TDirectoryEntry);
-
-  public
-    { Public-Deklarationen }
+    procedure  BuildStructureTree(ATV: TTreeView; RootNode: TTreeNode; ADirEntry: TDirectoryEntry);
   end;
 
 var
@@ -81,13 +75,12 @@ begin
 end;
 
 procedure TForm1.sm_File_OpenClick(Sender: TObject);
-Var
+var
   Node : TTreeNode;
 begin
-  If ( dlg_OpenImage.Execute ) Then
-  Begin
-    If ( Assigned(fISOImage) ) Then
-      FreeAndNil(fISOImage);
+  if ( dlg_OpenImage.Execute ) then
+  begin
+    FreeAndNil(fISOImage);
 
     mem_DebugOut.Clear;
     tv_Directory.Items.Clear;
@@ -95,84 +88,85 @@ begin
 
     fISOImage := TISOImage.Create(dlg_OpenImage.FileName, mem_DebugOut.Lines);
 
-    Try
+    try
       fISOImage.OpenImage;
 
         // only for debugging, later not needed - will be recreated on
         // save...
       fISOImage.ParsePathTable(tv_PathTable);
 
-      Node := tv_Directory.Items.Add(Nil, '/');
+      Node := tv_Directory.Items.Add(nil, '/');
       Node.Data := fISOImage.Structure.RootDirectory;
       BuildStructureTree(tv_Directory, Node, fISOImage.Structure.RootDirectory);
 
       // sm_File_SaveAs.Enabled := True; not yet ready
       sm_File_Close.Enabled := True;
 
-    Except
-      mem_DebugOut.Lines.Add('Exception: ' + Exception(ExceptObject).ClassName + ' -> ' + Exception(ExceptObject).Message);
-      Raise;
-
-      fISOImage.CloseImage;
-    End;
-  End;
+    except
+      on E: Exception do
+      begin
+        mem_DebugOut.Lines.Add('Exception: ' + E.ClassName + ' -> ' + E.Message);
+        raise;
+        //fISOImage.CloseImage;
+      end;
+    end;
+  end;
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  fISOImage := Nil;   // not necessary, but safety first...
+  fISOImage := nil;   // not necessary, but safety first...
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  If ( Assigned(fISOImage) ) Then
-    FreeAndNil(fISOImage);
+  FreeAndNil(fISOImage);
 end;
 
 procedure TForm1.tv_DirectoryDblClick(Sender: TObject);
-Var
+var
   Node : TTreeNode;
   Obj  : TObject;
 begin
   Node := TTreeView(Sender).Selected;
 
-  If Assigned(Node.Data) Then
-  Begin
+  if Assigned(Node.Data) then
+  begin
     Obj := TObject(Node.Data);
-    If ( Obj Is TFileEntry ) And ( SaveDialog1.Execute ) Then
+    if ( Obj is TFileEntry ) and ( SaveDialog1.Execute ) then
       fISOImage.ExtractFile(TFileEntry(Obj), SaveDialog1.FileName);
-  End;
+  end;
 end;
 
-Procedure TForm1.BuildStructureTree(ATV: TTreeView; RootNode : TTreeNode; ADirEntry : TDirectoryEntry);
-Var
+procedure TForm1.BuildStructureTree(ATV: TTreeView; RootNode: TTreeNode; ADirEntry: TDirectoryEntry);
+var
   i : Integer;
   Node : TTreeNode;
   Dir  : TDirectoryEntry;
   Fil  : TFileEntry;
-Begin
-  For i:=0 To ADirEntry.DirectoryCount-1 Do
-  Begin
+begin
+  for i := 0 to ADirEntry.DirectoryCount-1 do
+  begin
     Dir := ADirEntry.Directories[i];
 
     Node := ATV.Items.AddChild(RootNode, Dir.Name + '/');
     Node.Data := Pointer(Dir);
 
     BuildStructureTree(ATV, Node, Dir);
-  End;
+  end;
 
-  For i:=0 To ADirEntry.FileCount-1 Do
-  Begin
+  for i := 0 to ADirEntry.FileCount-1 do
+  begin
     Fil := ADirEntry.Files[i];
 
     Node := ATV.Items.AddChild(RootNode, Fil.Name);
     Node.Data := Pointer(Fil);
-  End;
-End;
+  end;
+end;
 
 procedure TForm1.sm_File_CloseClick(Sender: TObject);
 begin
-  If ( Assigned(fISOImage) ) Then
+  if ( Assigned(fISOImage) ) then
     fISOImage.CloseImage;
 
   sm_File_Close.Enabled  := False;
@@ -180,34 +174,35 @@ begin
 end;
 
 procedure TForm1.tv_DirectoryChange(Sender: TObject; Node: TTreeNode);
-Var
+var
   Obj : TObject;
 begin
-  If Assigned(Node) Then
-  Begin
+  if Assigned(Node) then
+  begin
     Obj := TObject(Node.Data);
 
     lb_EntType.Caption := 'unknown';
 
-    If Assigned(Obj) Then
-    Begin
-      If ( Obj Is TDirectoryEntry ) Then
-      Begin
+    if Assigned(Obj) then
+    begin
+      if ( Obj is TDirectoryEntry ) then
+      begin
         lb_EntType.Caption  := 'directory';
         lb_EntName.Caption  := TDirectoryEntry(Obj).Name;
         lb_EntName.Hint     := '';
         lb_EntName.ShowHint := False;
-      End;
+      end;
 
-      If ( Obj Is TFileEntry ) Then
-      Begin
+      if ( Obj is TFileEntry ) then
+      begin
         lb_EntType.Caption  := 'file';
         lb_EntName.Caption  := TFileEntry(Obj).Name;
         lb_EntName.Hint     := TFileEntry(Obj).Path;
         lb_EntName.ShowHint := True;
-      End;
-    End;
-  End;
+      end;
+    end;
+  end;
 end;
 
 end.
+

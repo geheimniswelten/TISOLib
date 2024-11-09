@@ -1,0 +1,9 @@
+__recovery
+__history
+*.groupproj.local
+*.dproj.local
+*.identcache
+*.dsk
+*.dsv
+*.dcu
+*.exe

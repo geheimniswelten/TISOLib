@@ -8,139 +8,129 @@
 // $Id: DataTree.pas,v 1.4 2004/06/15 15:32:32 muetze1 Exp $
 //
 
-Unit DataTree;
+unit DataTree;
 
-Interface
+interface
 
-Uses
+uses
+  SysUtils,       // for FreeAndNil
+  Contnrs,        // for TObjectList
   ISOStructs,     // for TDirectoryRecord
   ISOException,   // for EISOLibContainerException
-  Contnrs;         // for TObjectList
+  {*}ISOToolBox;
 
-Type
-  TDataTree = Class;  // forward declaration
-  TFileEntry = Class; // forward declaration
+type
+  TDataTree  = class;  // forward declaration
+  TFileEntry = class;  // forward declaration
 
   TDataSourceFlag = (dsfFromImage, dsfFromLocal, dsfOldSession);
   TEntryFlags     = (efNone, efAdded, efDeleted, efModified);
-  TDirectoryEntry = Class
-  Private
-    Function GetDirCount: Integer;
-    Function GetFileCount: Integer;
-    Function GetDirEntry(Index: Integer): TDirectoryEntry;
-    Function GetFileEntry(Index: Integer): TFileEntry;
+  TDirectoryEntry = class
+  private
+    function GetDirCount: Integer;
+    function GetFileCount: Integer;
+    function GetDirEntry(Index: Integer): TDirectoryEntry;
+    function GetFileEntry(Index: Integer): TFileEntry;
 
-  Protected
-      // management
+  protected
+    // management
     fDataTree    : TDataTree;
     fParent      : TDirectoryEntry;
     fDirectories : TObjectList;
     fFiles       : TObjectList;
 
-      // handling
+    // handling
     fSource      : TDataSourceFlag;
     fFlags       : TEntryFlags;
 
-      // ISO
+    // ISO
     fISOData     : TDirectoryRecord;
 
-      // helper
-    fName        : String;
+    // helper
+    fName        : string;
 
-    Function    AddFile(AFileEntry : TFileEntry): Integer;
-    Function    DelFile(AFileEntry : TFileEntry): Boolean;
-    Function    AddDirectory(ADirEntry : TDirectoryEntry): Integer;
-    Function    DelDirectory(ADirEntry : TDirectoryEntry): Boolean;
+    function AddFile(AFileEntry: TFileEntry): Integer;
+    function DelFile(AFileEntry: TFileEntry): Boolean;
+    function AddDirectory(ADirEntry: TDirectoryEntry): Integer;
+    function DelDirectory(ADirEntry: TDirectoryEntry): Boolean;
 
-  Public
-    Constructor Create(ADataTree : TDataTree; AParentDir : TDirectoryEntry; Const ASource : TDataSourceFlag); Virtual;
-    Destructor  Destroy; Override;
+  public
+    constructor Create(ADataTree: TDataTree; AParentDir: TDirectoryEntry; ASource: TDataSourceFlag); virtual;
+    destructor  Destroy; override;
 
-    Procedure   MoveDirTo(ANewDirectory : TDirectoryEntry);
+    procedure MoveDirTo(ANewDirectory: TDirectoryEntry);
 
-    Property    Files[Index: Integer]: TFileEntry             Read GetFileEntry;
-    Property    Directories[Index: Integer]: TDirectoryEntry  Read GetDirEntry;
+    property Files[Index: Integer]: TFileEntry            read GetFileEntry;
+    property Directories[Index: Integer]: TDirectoryEntry read GetDirEntry;
 
-  Published
-    Property    FileCount      : Integer           Read  GetFileCount;
-    Property    DirectoryCount : Integer           Read  GetDirCount;
-    Property    Parent         : TDirectoryEntry   Read  fParent;
-    Property    Name           : String            Read  fName
-                                                   Write fName;
-    Property    ISOData        : TDirectoryRecord  Read  fISOData
-                                                   Write fISOData;
-    Property    SourceOfData   : TDataSourceFlag   Read  fSource;
-    Property    Flags          : TEntryFlags       Read  fFlags;         
-  End;
+  published
+    property FileCount      : Integer          read GetFileCount;
+    property DirectoryCount : Integer          read GetDirCount;
+    property Parent         : TDirectoryEntry  read fParent;
+    property Name           : string           read fName    write fName;
+    property ISOData        : TDirectoryRecord read fISOData write fISOData;
+    property SourceOfData   : TDataSourceFlag  read fSource;
+    property Flags          : TEntryFlags      read fFlags;
+  end;
 
-  TFileEntry = Class
-  Private
-    Function    GetFullPath: String;
+  TFileEntry = class
+  private
+    function GetFullPath: string;
 
-  Protected
-      // management
+  protected
+    // management
     fDirectory   : TDirectoryEntry;
-    fName        : String;
+    fName        : string;
 
-      // handling
+    // handling
     fSource      : TDataSourceFlag;
     fFlags       : TEntryFlags;
 
-      // ISO
+    // ISO
     fISOData     : TDirectoryRecord;
 
-      // local filesystem
-    fSourceFile  : String; // or TFileName
+    // local filesystem
+    fSourceFile  : string; // or TFileName
 
-  Public
-    Constructor Create(ADirectoryEntry : TDirectoryEntry; Const ASource : TDataSourceFlag); Virtual;
-    Destructor  Destroy; Override;
+  public
+    constructor Create(ADirectoryEntry: TDirectoryEntry; ASource: TDataSourceFlag); virtual;
+    destructor  Destroy; override;
 
-    Procedure   MoveTo(ANewDirectoryEntry: TDirectoryEntry);
+    procedure MoveTo(ANewDirectoryEntry: TDirectoryEntry);
 
-      // only valid, if SourceOfData = dsfFromLocal
-    Procedure   FillISOData;
+    // only valid, if SourceOfData = dsfFromLocal
+    procedure FillISOData;
 
-  Published
-    Property    Name            : String              Read  fName
-                                                      Write fName;
-    Property    Path            : String              Read  GetFullPath;
+  published
+    property Name           : string           read fName       write fName;
+    property Path           : string           read GetFullPath;
 
-      // ISO Data
-    Property    ISOData         : TDirectoryRecord    Read  fISOData
-                                                      Write fISOData;
+    // ISO Data
+    property ISOData        : TDirectoryRecord read fISOData    write fISOData;
 
-    Property    SourceOfData    : TDataSourceFlag     Read  fSource;
-    Property    Flags           : TEntryFlags         Read  fFlags;
+    property SourceOfData   : TDataSourceFlag  read fSource;
+    property Flags          : TEntryFlags      read fFlags;
 
-    Property    SourceFileName  : String              Read  fSourceFile
-                                                      Write fSourceFile; 
-  End;
+    property SourceFileName : string           read fSourceFile write fSourceFile;
+  end;
 
-  TDataTree = Class
-  Private
-  Protected
+  TDataTree = class
+  protected
     fRootDir : TDirectoryEntry;
-  Public
-    Constructor Create; Virtual;
-    Destructor  Destroy; Override;
+  public
+    constructor Create; virtual;
+    destructor  Destroy; override;
+  published
+    property RootDirectory : TDirectoryEntry read fRootDir;
+  end;
 
-  Published
-    Property    RootDirectory : TDirectoryEntry   Read  fRootDir;
-
-  End;
-
-Implementation
-
-Uses
-  ISOToolBox,
-  SysUtils;          // for FreeAndNil()
+implementation
 
 { TFileEntry }
 
-Constructor TFileEntry.Create(ADirectoryEntry: TDirectoryEntry; Const ASource : TDataSourceFlag);
-Begin
-  Inherited Create;
+constructor TFileEntry.Create(ADirectoryEntry: TDirectoryEntry; ASource: TDataSourceFlag);
+begin
+  inherited Create;
 
   fSource     := ASource;
   fSourceFile := '';
@@ -149,23 +139,22 @@ Begin
   fDirectory.AddFile(Self);
 
   fFlags      := efNone;
-End;
+end;
 
-Destructor TFileEntry.Destroy;
-Begin
+destructor TFileEntry.Destroy;
+begin
+  inherited;
+end;
 
-  Inherited;
-End;
-
-Procedure TFileEntry.FillISOData;
-Begin
-  If ( fSource <> dsfFromLocal ) Then
-    Raise EISOLibImageException.Create('not a local file entry, can not fill ISO structure...');
+procedure TFileEntry.FillISOData;
+begin
+  if ( fSource <> dsfFromLocal ) then
+    raise EISOLibImageException.Create('not a local file entry, can not fill ISO structure...');
 
   fName := ExtractFileName(fSourceFile);
 
-  With fISOData Do
-  Begin
+  with fISOData do
+  begin
     DataLength.LittleEndian       := RetrieveFileSize(fSourceFile);
     DataLength.BigEndian          := SwapDWord(DataLength.LittleEndian);
 //    RecordingDateAndTime          : TDirectoryDateTime;
@@ -193,171 +182,164 @@ Begin
 //    InterleaveGapSize             := 0; // ???
     LengthOfFileIdentifier        := Length(fName);
       // padding bytes
-  End;
-End;
+  end;
+end;
 
-Function TFileEntry.GetFullPath: String;
-Var
+function TFileEntry.GetFullPath: string;
+var
   ADir : TDirectoryEntry;
-Begin
+begin
   ADir := fDirectory;
   Result := '';
 
-  While ( Assigned(ADir) ) Do
-  Begin
+  while ( Assigned(ADir) ) do
+  begin
     Result := ADir.Name + '/' + Result;
     ADir   := ADir.Parent;
-  End;
-End;
+  end;
+end;
 
-Procedure TFileEntry.MoveTo(ANewDirectoryEntry: TDirectoryEntry);
-Begin
+procedure TFileEntry.MoveTo(ANewDirectoryEntry: TDirectoryEntry);
+begin
   fDirectory.DelFile(Self);
   fDirectory := ANewDirectoryEntry;
   ANewDirectoryEntry.AddFile(Self);
-End;
+end;
 
 { TDirectoryEntry }
 
-Function TDirectoryEntry.AddDirectory(ADirEntry: TDirectoryEntry): Integer;
-Begin
-  If ( fDirectories.IndexOf(ADirEntry) > -1 ) Then
-    Raise EISOLibContainerException.Create('directory entry already added');
-  If ( Assigned(ADirEntry.fParent) ) And
-     ( ADirEntry.fParent <> Self ) Then
-    Raise EISOLibContainerException.Create('directory entry already added - use MoveDirTo() instead!');
+function TDirectoryEntry.AddDirectory(ADirEntry: TDirectoryEntry): Integer;
+begin
+  if ( fDirectories.IndexOf(ADirEntry) > -1 ) then
+    raise EISOLibContainerException.Create('directory entry already added');
+  if ( Assigned(ADirEntry.fParent) ) and ( ADirEntry.fParent <> Self ) then
+    raise EISOLibContainerException.Create('directory entry already added - use MoveDirTo() instead!');
 
   Assert(ADirEntry.fParent = Self, 'Assertion: directory entry on AddDirectory() has different parent directory');
-  //  ADirEntry.fParent := Self; // normal case: it is already assign
+  //ADirEntry.fParent := Self; // normal case: it is already assign
 
   Result := fDirectories.Add(ADirEntry);
-End;
+end;
 
-Function TDirectoryEntry.AddFile(AFileEntry: TFileEntry): Integer;
-Begin
-  If ( fFiles.IndexOf(AFileEntry) > -1 ) Then
-    Raise EISOLibContainerException.Create('file entry already added');
-  If ( Assigned(AFileEntry.fDirectory) ) And
-     ( AFileEntry.fDirectory <> Self ) Then
-    Raise EISOLibContainerException.Create('file entry already listed in different directory');
+function TDirectoryEntry.AddFile(AFileEntry: TFileEntry): Integer;
+begin
+  if ( fFiles.IndexOf(AFileEntry) > -1 ) then
+    raise EISOLibContainerException.Create('file entry already added');
+  if ( Assigned(AFileEntry.fDirectory) ) and ( AFileEntry.fDirectory <> Self ) then
+    raise EISOLibContainerException.Create('file entry already listed in different directory');
 
-  Assert(AFileEntry.fDirectory <> Nil, 'Assertion: file entry on AddFile() has no directory assigned');
+  Assert(AFileEntry.fDirectory <> nil, 'Assertion: file entry on AddFile() has no directory assigned');
   //  AFileEntry.fDirectory := Self; // normal case: it is already assign
 
   Result := fFiles.Add(AFileEntry);
-End;
+end;
 
-Constructor TDirectoryEntry.Create(ADataTree: TDataTree; AParentDir : TDirectoryEntry; Const ASource : TDataSourceFlag);
-Begin
-  Inherited Create;
+constructor TDirectoryEntry.Create(ADataTree: TDataTree; AParentDir: TDirectoryEntry; ASource: TDataSourceFlag);
+begin
+  inherited Create;
 
   fDataTree    := ADataTree;
   fParent      := AParentDir;
   fFiles       := TObjectList.Create(True);
   fDirectories := TObjectList.Create(True);
 
-  If Assigned(fParent) Then
+  if Assigned(fParent) then
     fParent.AddDirectory(Self);
 
   fSource      := ASource;
-  fFlags       := efNone;         
-End;
+  fFlags       := efNone;
+end;
 
-Function TDirectoryEntry.DelDirectory(ADirEntry: TDirectoryEntry): Boolean;
-Begin
+function TDirectoryEntry.DelDirectory(ADirEntry: TDirectoryEntry): Boolean;
+begin
   Result := False;
 
-  If ( fDirectories.IndexOf(ADirEntry) = -1 ) Then
+  if ( fDirectories.IndexOf(ADirEntry) = -1 ) then
     Exit;
-    
+
   fDirectories.Extract(ADirEntry);
-  ADirEntry.fParent := Nil;
+  ADirEntry.fParent := nil;
 
   Result := True;
-End;
+end;
 
-Function TDirectoryEntry.DelFile(AFileEntry: TFileEntry): Boolean;
-Begin
+function TDirectoryEntry.DelFile(AFileEntry: TFileEntry): Boolean;
+begin
   Result := False;
 
-  If ( fFiles.IndexOf(AFileEntry) = -1 ) Then
+  if ( fFiles.IndexOf(AFileEntry) = -1 ) then
     Exit;
 
   fFiles.Extract(AFileEntry);
-  AFileEntry.fDirectory := Nil;
+  AFileEntry.fDirectory := nil;
 
   Result := True;
-End;
+end;
 
-Destructor TDirectoryEntry.Destroy;
-Begin
-  If ( Assigned(fFiles) ) Then
-    FreeAndNil(fFiles);
-  If ( Assigned(fDirectories) ) Then
-    FreeAndNil(fDirectories);
+destructor TDirectoryEntry.Destroy;
+begin
+  FreeAndNil(fFiles);
+  FreeAndNil(fDirectories);
 
-  Inherited;
-End;
+  inherited;
+end;
 
-Function TDirectoryEntry.GetDirCount: Integer;
-Begin
-  If ( Assigned(fDirectories) ) Then
+function TDirectoryEntry.GetDirCount: Integer;
+begin
+  if ( Assigned(fDirectories) ) then
     Result := fDirectories.Count
-  Else
+  else
     Result := 0;
-End;
+end;
 
-Function TDirectoryEntry.GetDirEntry(Index: Integer): TDirectoryEntry;
-Begin
-  Result := fDirectories[Index] As TDirectoryEntry;
-End;
+function TDirectoryEntry.GetDirEntry(Index: Integer): TDirectoryEntry;
+begin
+  Result := fDirectories[Index] as TDirectoryEntry;
+end;
 
-Function TDirectoryEntry.GetFileCount: Integer;
-Begin
-  If ( Assigned(fFiles) ) Then
+function TDirectoryEntry.GetFileCount: Integer;
+begin
+  if ( Assigned(fFiles) ) then
     Result := fFiles.Count
-  Else
+  else
     Result := 0;
-End;
+end;
 
-Function TDirectoryEntry.GetFileEntry(Index: Integer): TFileEntry;
-Begin
-  Result := fFiles[Index] As TFileEntry;
-End;
+function TDirectoryEntry.GetFileEntry(Index: Integer): TFileEntry;
+begin
+  Result := fFiles[Index] as TFileEntry;
+end;
 
-Procedure TDirectoryEntry.MoveDirTo(ANewDirectory: TDirectoryEntry);
-Begin
-  If ( Self = ANewDirectory ) Then
-    Raise EISOLibContainerException.Create('can not move directory to itself');
-  If ( fParent = ANewDirectory ) Then
-  Begin
+procedure TDirectoryEntry.MoveDirTo(ANewDirectory: TDirectoryEntry);
+begin
+  if ( Self = ANewDirectory ) then
+    raise EISOLibContainerException.Create('can not move directory to itself');
+  if ( fParent = ANewDirectory ) then
+  begin
     Assert(False, 'senseless move of directory');
     Exit; // this we have already
-  End;
+  end;
 
   fParent.DelDirectory(Self); // hoffentlich kein Absturz hier, da DelDirectory Parent auf Nil setzt
   fParent := ANewDirectory;
   ANewDirectory.AddDirectory(Self);
-End;
+end;
 
 { TDataTree }
 
-Constructor TDataTree.Create;
-Begin
-  Inherited Create;
+constructor TDataTree.Create;
+begin
+  inherited;
+  fRootDir := TDirectoryEntry.Create(Self, nil, dsfFromImage);  // Root hat keinen Parent
+end;
 
-  fRootDir := TDirectoryEntry.Create(Self, Nil, dsfFromImage);  // Root hat keinen Parent
-End;
+destructor TDataTree.Destroy;
+begin
+  FreeAndNil(fRootDir);
+  inherited;
+end;
 
-Destructor TDataTree.Destroy;
-Begin
-  If ( Assigned(fRootDir) ) Then
-    FreeAndNil(fRootDir);
-
-  Inherited;
-End;
-
-End.
+end.
 
 //  Log List
 //
@@ -373,3 +355,4 @@ End.
 //
 //
 //
+

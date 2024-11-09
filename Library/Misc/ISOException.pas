@@ -8,21 +8,21 @@
 // $Id: ISOException.pas,v 1.3 2004/06/07 02:24:41 nalilord Exp $
 //
 
-Unit ISOException;
+unit ISOException;
 
-Interface
+interface
 
-Uses
+uses
   SysUtils;   // for Exception
 
-Type
-  EISOLibException = Class(Exception);
-  EISOLibImageException = Class(EISOLibException);
-  EISOLibContainerException = Class(EISOLibException);
+type
+  EISOLibException = class(Exception);
+  EISOLibImageException = class(EISOLibException);
+  EISOLibContainerException = class(EISOLibException);
 
-Implementation
+implementation
 
-End.
+end.
 
 //  Log List
 //
@@ -34,3 +34,4 @@ End.
 //
 //
 //
+

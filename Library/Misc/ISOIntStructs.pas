@@ -8,13 +8,13 @@
 // $Id: ISOIntStructs.pas,v 1.3 2004/06/07 02:24:41 nalilord Exp $
 //
 
-Unit ISOIntStructs;
+unit ISOIntStructs;
 
-Interface
+interface
 
-Implementation
+implementation
 
-End.
+end.
 
 //  Log List
 //
@@ -25,3 +25,4 @@ End.
 //
 //
 //
+

@@ -8,16 +8,16 @@
 // $Id: GlobalDefs.pas,v 1.3 2004/06/07 02:24:41 nalilord Exp $
 //
 
-Unit GlobalDefs;
+unit GlobalDefs;
 
-Interface
+interface
 
-Const
-  coISOLibVersion = '0.01 r3 ($Date)'; 
+const
+  coISOLibVersion = '0.01 r3 ($Date)';
 
-Implementation
+implementation
 
-End.
+end.
 
 //  Log List
 //

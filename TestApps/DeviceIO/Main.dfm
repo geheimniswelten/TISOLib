@@ -14,7 +14,6 @@ object MainForm: TMainForm
   OldCreateOrder = False
   Position = poScreenCenter
   OnCreate = FormCreate
-  PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel
     Left = 16
@@ -38,7 +37,6 @@ object MainForm: TMainForm
     Width = 105
     Height = 21
     Style = csDropDownList
-    ItemHeight = 13
     TabOrder = 1
   end
 end
