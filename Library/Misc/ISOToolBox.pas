@@ -101,24 +101,16 @@ function BuildVolumeDateTime(const ADateTime: TDateTime; AGMTOffset: Byte): TVol
 var
   Hour, Min, Sec, MSec,
   Year, Month, Day : Word;
-procedure FillRec(Rec: PAnsiChar; Len: Integer; Value: Word);
-  var
-    Temp: AnsiString;
-  begin
-    Temp := AnsiString(IntToStr(Value));
-    Temp := {AnsiStrings.}StringOfChar(AnsiChar('0'), Len - Length(Temp)) + Temp;
-    AnsiStrings.StrPCopy(Rec, Temp);
-  end;
 begin
   DecodeDate(ADateTime, Year, Month, Day);
   DecodeTime(ADateTime, Hour, Min, Sec, MSec);
-  FillRec(@Result.Year,     Length(Result.Year),     Year);
-  FillRec(@Result.Month,    Length(Result.Month),    Month);
-  FillRec(@Result.Day,      Length(Result.Day),      Day);
-  FillRec(@Result.Hour,     Length(Result.Hour),     Hour);
-  FillRec(@Result.Minute,   Length(Result.Minute),   Min);
-  FillRec(@Result.Second,   Length(Result.Second),   Sec);
-  FillRec(@Result.MSeconds, Length(Result.MSeconds), MSec);
+  AnsiStrings.StrPCopy(@Result.Year,     AnsiString(Format('%.*d', [Length(Result.Year),     Year])));
+  AnsiStrings.StrPCopy(@Result.Month,    AnsiString(Format('%.*d', [Length(Result.Month),    Month])));
+  AnsiStrings.StrPCopy(@Result.Day,      AnsiString(Format('%.*d', [Length(Result.Day),      Day])));
+  AnsiStrings.StrPCopy(@Result.Hour,     AnsiString(Format('%.*d', [Length(Result.Hour),     Hour])));
+  AnsiStrings.StrPCopy(@Result.Minute,   AnsiString(Format('%.*d', [Length(Result.Minute),   Min])));
+  AnsiStrings.StrPCopy(@Result.Second,   AnsiString(Format('%.*d', [Length(Result.Second),   Sec])));
+  AnsiStrings.StrPCopy(@Result.MSeconds, AnsiString(Format('%.*d', [Length(Result.MSeconds), MSec])));
   Result.GMTOffset := AGMTOffset;
 end;
 
